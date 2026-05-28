@@ -6,17 +6,15 @@ from pathlib import Path
 
 import pytest
 
+from agent_notify_config import AgentNotifyPaths
 from agent_notify_core import (
-    AgentNotifyPaths,
     ensure_shared_script,
     install_hooks,
-    is_event_configured,
     load_suppress_when_vscode_focused,
-    remove_managed_hook,
     save_suppress_when_vscode_focused,
-    set_managed_hook,
     uninstall_hooks,
 )
+from agent_notify_hooks import is_event_configured, remove_managed_hook, set_managed_hook
 
 
 def test_install_preserves_existing_claude_settings_and_adds_managed_hooks(tmp_path: Path) -> None:

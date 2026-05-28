@@ -149,11 +149,11 @@
 **注意事项**：测试文件暂不拆分；只更新导入和必要断言。
 
 **TODO**
-- [ ] 更新 `tests/test_agent_notify_core.py` 导入，保持行为覆盖不变。
-- [ ] 更新 `tests/test_gui_layout.py`，避免过度依赖源码字符串。
-- [ ] 在 `.gitignore` 增加注释：`dist/AgentNotifyConfigurator.exe` 当前作为发布产物被跟踪，`build/` 继续忽略。
-- [ ] 运行 `python -m pytest -q`。
-- [ ] 提交：`test: align tests with refactored modules`
+- [x] 更新 `tests/test_agent_notify_core.py` 导入，保持行为覆盖不变。
+- [x] 更新 `tests/test_gui_layout.py`，避免过度依赖源码字符串。
+- [x] 在 `.gitignore` 增加注释：`dist/AgentNotifyConfigurator.exe` 当前作为发布产物被跟踪，`build/` 继续忽略。
+- [x] 运行 `python -m pytest -q`。
+- [x] 提交：`test: align tests with refactored modules`
 
 ### 第八阶段：文档和构建收尾
 
@@ -182,7 +182,7 @@
 - [x] 阶段四：抽出 `agent_notify_script.py`
 - [x] 阶段五：抽出 `agent_notify_ui_components.py`
 - [x] 阶段六：清理 `AgentNotifyApp` 内部编排
-- [ ] 阶段七：调整测试与 `.gitignore` 注释
+- [x] 阶段七：调整测试与 `.gitignore` 注释
 - [ ] 阶段八：更新 README、构建 exe、最终验证
 
 ## 重构指导原则

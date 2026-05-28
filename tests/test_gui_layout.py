@@ -14,23 +14,24 @@ def test_status_panel_uses_scrollable_frame_for_overflow() -> None:
 
 
 def test_gui_uses_light_stepper_layout_from_reference() -> None:
-    source = inspect.getsource(agent_notify_configurator) + inspect.getsource(agent_notify_ui_components)
+    app_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
+    step_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._step_definitions)
 
-    assert "class StepCard" in source
-    assert "class StatusRow" in source
-    assert "class IconCanvas" in source
-    assert "class TimelineMarker" in source
-    assert "选择提示音" in source
-    assert "生成共享通知脚本" in source
-    assert "安装 Hook 配置" in source
-    assert "测试通知" in source
-    assert "撤销（可选）" in source
-    assert "VS Code 前台静默（可选）" in source
-    assert "当前状态" in source
-    assert "配置预览" in source
-    assert "#F5F5F7" in source
-    assert "#007AFF" in source
-    assert "visual_effect" in source
+    assert hasattr(agent_notify_ui_components, "StepCard")
+    assert hasattr(agent_notify_ui_components, "StatusRow")
+    assert hasattr(agent_notify_ui_components, "IconCanvas")
+    assert hasattr(agent_notify_ui_components, "TimelineMarker")
+    assert agent_notify_ui_components.COLORS["bg"] == "#F5F5F7"
+    assert agent_notify_ui_components.COLORS["blue"] == "#007AFF"
+    assert "visual_effect" in agent_notify_ui_components.COLORS
+    assert "选择提示音" in step_source
+    assert "生成共享通知脚本" in step_source
+    assert "安装 Hook 配置" in step_source
+    assert "测试通知" in step_source
+    assert "撤销（可选）" in step_source
+    assert "VS Code 前台静默（可选）" in app_source
+    assert "当前状态" in app_source
+    assert "配置预览" in app_source
 
 
 def test_gui_presents_audio_as_optional() -> None:
