@@ -163,16 +163,16 @@
 **注意事项**：先确认 README 文件编码，避免中文乱码。
 
 **TODO**
-- [ ] 检查 README UTF-8 显示。
-- [ ] 更新文件结构说明。
-- [ ] 保留“提示音可选”“只配置已安装工具”等现有行为说明。
-- [ ] 运行 `python build_windows.py`。
-- [ ] 运行最终验证：
+- [x] 检查 README UTF-8 显示。
+- [x] 更新文件结构说明。
+- [x] 保留“提示音可选”“只配置已安装工具”等现有行为说明。
+- [x] 运行 `python build_windows.py`。
+- [x] 运行最终验证：
   - `python -m pytest -q`
-  - `python -m compileall agent_notify_core.py agent_notify_configurator.py build_windows.py`
+  - `python -m compileall agent_notify_config.py agent_notify_hooks.py agent_notify_script.py agent_notify_core.py agent_notify_ui_components.py agent_notify_configurator.py build_windows.py`
   - `python agent_notify_configurator.py --self-test`
   - `git diff --check`
-- [ ] 提交：`docs: update refactored project structure`
+- [x] 提交：`docs: update refactored project structure`
 
 ## 阶段总 TODOList
 
@@ -183,7 +183,7 @@
 - [x] 阶段五：抽出 `agent_notify_ui_components.py`
 - [x] 阶段六：清理 `AgentNotifyApp` 内部编排
 - [x] 阶段七：调整测试与 `.gitignore` 注释
-- [ ] 阶段八：更新 README、构建 exe、最终验证
+- [x] 阶段八：更新 README、构建 exe、最终验证
 
 ## 重构指导原则
 

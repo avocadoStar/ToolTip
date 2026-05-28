@@ -6,11 +6,16 @@
 
 ## 文件
 
-- `agent_notify_configurator.py`：GUI 程序入口，使用 customtkinter。
-- `agent_notify_core.py`：Hook 合并、备份、取消配置、通知脚本生成等核心逻辑。
+- `agent_notify_configurator.py`：GUI 程序入口，负责布局编排、用户动作、loading 和消息框。
+- `agent_notify_ui_components.py`：GUI 视觉组件、图标、步骤卡片和状态行。
+- `agent_notify_core.py`：核心编排层，负责生成共享脚本、安装/取消 Hook、状态查询和测试通知。
+- `agent_notify_config.py`：路径、配置、JSON 读写和稳定常量。
+- `agent_notify_hooks.py`：Hook 命令生成、托管 Hook 合并、移除和状态检测。
+- `agent_notify_script.py`：共享 PowerShell 通知脚本模板。
 - `build_windows.py`：Windows 下用 PyInstaller 构建 EXE。
 - `requirements.txt`：运行、测试和打包依赖。
 - `tests/test_agent_notify_core.py`：核心行为测试。
+- `tests/test_gui_layout.py`：GUI 静态结构测试。
 - `dist/AgentNotifyConfigurator.exe`：构建后的可双击 GUI 程序。
 
 ## 使用 EXE
@@ -23,7 +28,7 @@ dist\AgentNotifyConfigurator.exe
 
 界面中按顺序操作：
 
-1. 点击 `Browse` 选择一个 `.wav` 或 `.mp3` 提示音。
+1. 可选：点击 `Browse` 选择一个 `.wav` 或 `.mp3` 提示音；不选择时仍可继续生成脚本和安装 Hook，通知将静音显示。
 2. 点击 `Generate script` 生成共享通知脚本。
 3. 点击 `Install hooks` 写入已安装工具的用户级 Hook 配置；如果只安装了 Codex 或只安装了 Claude Code，则只配置对应工具。
 4. 点击 `Test notice` 测试声音和右下角通知。
@@ -91,5 +96,5 @@ python -m pytest tests/test_agent_notify_core.py -q
 运行语法检查：
 
 ```powershell
-python -m compileall agent_notify_core.py agent_notify_configurator.py build_windows.py
+python -m compileall agent_notify_config.py agent_notify_hooks.py agent_notify_script.py agent_notify_core.py agent_notify_ui_components.py agent_notify_configurator.py build_windows.py
 ```
