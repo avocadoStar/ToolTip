@@ -35,8 +35,14 @@ def build_pyinstaller_command(pyinstaller_exe: str) -> list[str]:
         f"{ICON_PATH};assets",
         "--collect-all",
         "customtkinter",
+        "--collect-all",
+        "pystray",
+        "--collect-all",
+        "PIL",
         "--hidden-import",
         "darkdetect",
+        "--hidden-import",
+        "pystray._win32",
         str(ROOT / "agent_notify_configurator.py"),
     ]
 

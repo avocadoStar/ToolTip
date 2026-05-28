@@ -33,6 +33,7 @@ def ensure_shared_script(
     audio_path: Path | None,
     paths: AgentNotifyPaths,
     suppress_when_vscode_focused: bool = True,
+    notifications_enabled: bool | None = None,
 ) -> None:
     paths.agent_notify_dir.mkdir(parents=True, exist_ok=True)
     for old_suffix in SUPPORTED_AUDIO_SUFFIXES:
@@ -40,10 +41,18 @@ def ensure_shared_script(
         if old_audio.exists():
             old_audio.unlink()
 
+    try:
+        existing_config = read_json(paths.config_path)
+    except Exception:
+        existing_config = {}
+    if notifications_enabled is None:
+        notifications_enabled = _bool_config_value(existing_config, "notificationsEnabled", True)
+
     config = {
         "app": MANAGED_BY,
         "notifyScript": str(paths.notify_script_path),
         "suppressWhenVSCodeFocused": bool(suppress_when_vscode_focused),
+        "notificationsEnabled": bool(notifications_enabled),
         "updatedAt": datetime.now().astimezone().isoformat(),
     }
 
@@ -68,13 +77,19 @@ def install_hooks(
     audio_path: Path | None,
     paths: AgentNotifyPaths,
     suppress_when_vscode_focused: bool = True,
+    notifications_enabled: bool | None = None,
 ) -> None:
     codex_installed = paths.codex_hooks_path.parent.exists()
     claude_installed = paths.claude_settings_path.parent.exists()
     if not codex_installed and not claude_installed:
         raise RuntimeError("Codex or Claude configuration directory was not found.")
 
-    ensure_shared_script(audio_path, paths, suppress_when_vscode_focused=suppress_when_vscode_focused)
+    ensure_shared_script(
+        audio_path,
+        paths,
+        suppress_when_vscode_focused=suppress_when_vscode_focused,
+        notifications_enabled=notifications_enabled,
+    )
 
     if codex_installed:
         codex = read_json(paths.codex_hooks_path)
@@ -165,6 +180,30 @@ def save_suppress_when_vscode_focused(paths: AgentNotifyPaths, enabled: bool) ->
     config["suppressWhenVSCodeFocused"] = bool(enabled)
     config["updatedAt"] = datetime.now().astimezone().isoformat()
     write_json(paths.config_path, config)
+
+
+def load_notifications_enabled(paths: AgentNotifyPaths) -> bool:
+    try:
+        config = read_json(paths.config_path)
+    except Exception:
+        return True
+
+    return _bool_config_value(config, "notificationsEnabled", True)
+
+
+def save_notifications_enabled(paths: AgentNotifyPaths, enabled: bool) -> None:
+    config = read_json(paths.config_path)
+    config.setdefault("app", MANAGED_BY)
+    config["notificationsEnabled"] = bool(enabled)
+    config["updatedAt"] = datetime.now().astimezone().isoformat()
+    write_json(paths.config_path, config)
+
+
+def _bool_config_value(config: dict[str, Any], key: str, default: bool) -> bool:
+    value = config.get(key, default)
+    if isinstance(value, bool):
+        return value
+    return default
 
 
 def get_status(paths: AgentNotifyPaths) -> dict[str, bool]:

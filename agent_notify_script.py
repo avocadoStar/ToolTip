@@ -21,6 +21,7 @@ Add-Type -AssemblyName System.Xaml
 
 $baseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $configPath = Join-Path $baseDir 'config.json'
+$logPath = Join-Path $baseDir 'notify.log'
 
 function Get-NotifyConfig {
     if (Test-Path -LiteralPath $configPath) {
@@ -66,48 +67,38 @@ function Resolve-AudioPath {
     return $null
 }
 
-function Test-SuppressWhenVSCodeFocused {
+function Test-NotificationsEnabled {
     $config = Get-NotifyConfig
     if ($null -eq $config) {
         return $true
     }
 
-    if ($null -eq $config.PSObject.Properties['suppressWhenVSCodeFocused']) {
+    $enabled = $config.PSObject.Properties['notificationsEnabled']
+    if ($null -eq $enabled) {
         return $true
     }
 
-    return [bool]$config.suppressWhenVSCodeFocused
+    if ($enabled.Value -is [bool]) {
+        return [bool]$enabled.Value
+    }
+
+    return $true
 }
 
-function Get-ForegroundProcessName {
-    $signature = @'
-[DllImport("user32.dll")]
-public static extern System.IntPtr GetForegroundWindow();
-[DllImport("user32.dll")]
-public static extern uint GetWindowThreadProcessId(System.IntPtr hWnd, out uint processId);
-'@
+function Write-NotifyLog {
+    param(
+        [Parameter(Mandatory)][string]$Decision,
+        [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][string]$Event
+    )
 
-    if (-not ([System.Management.Automation.PSTypeName]'AgentNotify.ForegroundWindow').Type) {
-        Add-Type -MemberDefinition $signature -Name "ForegroundWindow" -Namespace "AgentNotify"
-    }
-
-    $handle = [AgentNotify.ForegroundWindow]::GetForegroundWindow()
-    if ($handle -eq [IntPtr]::Zero) {
-        return ''
-    }
-
-    [uint32]$processId = 0
-    [AgentNotify.ForegroundWindow]::GetWindowThreadProcessId($handle, [ref]$processId) | Out-Null
-    if ($processId -eq 0) {
-        return ''
-    }
-
-    return (Get-Process -Id ([int]$processId)).ProcessName
-}
-
-function Test-VSCodeForeground {
-    $processName = Get-ForegroundProcessName
-    return $processName -in @('Code', 'Code - Insiders')
+    $line = [string]::Join("`t", @(
+        [DateTimeOffset]::Now.ToString('o'),
+        "source=$Source",
+        "event=$Event",
+        "decision=$Decision"
+    ))
+    Add-Content -LiteralPath $logPath -Value $line -Encoding UTF8
 }
 
 function Play-NoticeSound {
@@ -164,56 +155,57 @@ function Show-ToastNotice {
         SnapsToDevicePixels="True"
         UseLayoutRounding="True">
     <Border Name="macOSNoticeCard"
-            Background="#F8FBFF"
-            BorderBrush="#D9E4F2"
+            Background="#FAFBFD"
+            BorderBrush="#E4E8F0"
             BorderThickness="1"
             CornerRadius="18">
         <Border.Effect>
             <DropShadowEffect Color="#8AA3C2"
-                              BlurRadius="20"
-                              ShadowDepth="4"
-                              Opacity="0.20" />
+                              BlurRadius="18"
+                              ShadowDepth="3"
+                              Opacity="0.18" />
         </Border.Effect>
-        <Grid Margin="16,13,14,13">
+        <Grid Margin="15,12,12,12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="44" />
+                <ColumnDefinition Width="38" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="26" />
+                <ColumnDefinition Width="24" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="25" />
+                <RowDefinition Height="24" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
                     Grid.RowSpan="2"
                     Grid.Column="0"
-                    Width="30"
-                    Height="30"
+                    Width="24"
+                    Height="24"
                     HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    CornerRadius="9">
+                    VerticalAlignment="Top"
+                    Margin="0,2,0,0"
+                    CornerRadius="7">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#2F8BFF" Offset="0" />
-                        <GradientStop Color="#005BFF" Offset="1" />
+                        <GradientStop Color="#4DA3FF" Offset="0" />
+                        <GradientStop Color="#0A73F6" Offset="1" />
                     </LinearGradientBrush>
                 </Border.Background>
                 <Grid>
-                    <Ellipse Width="16" Height="16" Fill="#FFFFFF" Opacity="0.96" />
-                    <Ellipse Width="8" Height="8" Fill="#1368FF" HorizontalAlignment="Right" Margin="0,0,4,0" />
-                    <Ellipse Width="5" Height="5" Fill="#BBD7FF" HorizontalAlignment="Left" Margin="8,0,0,0" />
+                    <Ellipse Width="12" Height="12" Fill="#FFFFFF" Opacity="0.96" />
+                    <Ellipse Width="6" Height="6" Fill="#1368FF" HorizontalAlignment="Right" Margin="0,0,4,0" />
+                    <Ellipse Width="4" Height="4" Fill="#BBD7FF" HorizontalAlignment="Left" Margin="7,0,0,0" />
                 </Grid>
             </Border>
 
             <TextBlock Name="titleText"
                        Grid.Row="0"
                        Grid.Column="1"
-                       VerticalAlignment="Bottom"
+                       VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       FontSize="15"
+                       FontSize="14.5"
                        FontWeight="SemiBold"
-                       Foreground="#111827" />
+                       Foreground="#1D1D1F" />
 
             <Button Name="closeButton"
                     Grid.Row="0"
@@ -228,9 +220,9 @@ function Show-ToastNotice {
                     BorderBrush="Transparent"
                     BorderThickness="0"
                     Padding="0"
-                    FontSize="18"
+                    FontSize="17"
                     FontWeight="Light"
-                    Foreground="#3F3F46" />
+                    Foreground="#707075" />
 
             <TextBlock Name="messageText"
                        Grid.Row="1"
@@ -239,9 +231,9 @@ function Show-ToastNotice {
                        VerticalAlignment="Top"
                        TextWrapping="Wrap"
                        TextTrimming="CharacterEllipsis"
-                       FontSize="12"
+                       FontSize="12.5"
                        LineHeight="16"
-                       Foreground="#3F3F46" />
+                       Foreground="#626268" />
         </Grid>
     </Border>
 </Window>
@@ -277,7 +269,8 @@ function Show-ToastNotice {
 }
 
 $notice = Get-NoticeText -Source $Source -Event $Event
-if ((Test-SuppressWhenVSCodeFocused) -and (Test-VSCodeForeground)) {
+if (-not (Test-NotificationsEnabled)) {
+    Write-NotifyLog -Decision 'skipped-disabled' -Source $Source -Event $Event
     return
 }
 
@@ -286,4 +279,5 @@ if ($null -ne $audioPath) {
     Play-NoticeSound -Path $audioPath
 }
 Show-ToastNotice -Title $notice[0] -Message $notice[1]
+Write-NotifyLog -Decision 'shown' -Source $Source -Event $Event
 """

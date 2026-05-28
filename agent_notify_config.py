@@ -29,6 +29,10 @@ class AgentNotifyPaths:
     def config_path(self) -> Path:
         return self.agent_notify_dir / "config.json"
 
+    @property
+    def notify_log_path(self) -> Path:
+        return self.agent_notify_dir / "notify.log"
+
 
 def default_paths() -> AgentNotifyPaths:
     home = Path.home()

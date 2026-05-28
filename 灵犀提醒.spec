@@ -3,8 +3,12 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('D:\\project\\ToolTip\\assets\\lingxi_icon.ico', 'assets')]
 binaries = []
-hiddenimports = ['darkdetect']
+hiddenimports = ['darkdetect', 'pystray._win32']
 tmp_ret = collect_all('customtkinter')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('pystray')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('PIL')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 

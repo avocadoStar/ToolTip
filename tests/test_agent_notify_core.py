@@ -10,7 +10,9 @@ from agent_notify_config import AgentNotifyPaths
 from agent_notify_core import (
     ensure_shared_script,
     install_hooks,
+    load_notifications_enabled,
     load_suppress_when_vscode_focused,
+    save_notifications_enabled,
     save_suppress_when_vscode_focused,
     uninstall_hooks,
 )
@@ -106,6 +108,7 @@ def test_ensure_shared_script_accepts_mp3_audio(tmp_path: Path) -> None:
     assert paths.managed_audio_path(".mp3").exists()
     assert config["managedAudio"].endswith("completed.mp3")
     assert config["suppressWhenVSCodeFocused"] is True
+    assert config["notificationsEnabled"] is True
 
 
 def test_ensure_shared_script_allows_no_audio(tmp_path: Path) -> None:
@@ -118,6 +121,7 @@ def test_ensure_shared_script_allows_no_audio(tmp_path: Path) -> None:
     assert "managedAudio" not in config
     assert "originalAudio" not in config
     assert config["suppressWhenVSCodeFocused"] is True
+    assert config["notificationsEnabled"] is True
     assert not paths.managed_audio_path(".wav").exists()
     assert not paths.managed_audio_path(".mp3").exists()
 
@@ -171,6 +175,16 @@ def test_install_hooks_persists_vscode_foreground_suppression_choice(tmp_path: P
 
     config = json.loads(paths.config_path.read_text(encoding="utf-8"))
     assert config["suppressWhenVSCodeFocused"] is False
+
+
+def test_install_hooks_persists_notifications_enabled_choice(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    paths.codex_hooks_path.parent.mkdir(parents=True)
+
+    install_hooks(None, paths, notifications_enabled=False)
+
+    config = json.loads(paths.config_path.read_text(encoding="utf-8"))
+    assert config["notificationsEnabled"] is False
 
 
 def test_install_hooks_configures_only_codex_when_only_codex_is_installed(tmp_path: Path) -> None:
@@ -239,6 +253,38 @@ def test_save_suppress_when_vscode_focused_preserves_existing_config(tmp_path: P
     assert config["suppressWhenVSCodeFocused"] is False
 
 
+def test_load_notifications_enabled_defaults_to_enabled(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+
+    assert load_notifications_enabled(paths) is True
+
+    paths.config_path.parent.mkdir(parents=True)
+    paths.config_path.write_text("{not json", encoding="utf-8")
+    assert load_notifications_enabled(paths) is True
+
+
+def test_save_notifications_enabled_preserves_existing_config(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    paths.config_path.parent.mkdir(parents=True)
+    paths.config_path.write_text(
+        json.dumps(
+            {
+                "originalAudio": "sound.wav",
+                "suppressWhenVSCodeFocused": False,
+                "notificationsEnabled": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    save_notifications_enabled(paths, False)
+
+    config = json.loads(paths.config_path.read_text(encoding="utf-8"))
+    assert config["originalAudio"] == "sound.wav"
+    assert config["suppressWhenVSCodeFocused"] is False
+    assert config["notificationsEnabled"] is False
+
+
 def test_ensure_shared_script_rejects_unsupported_audio(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     audio = tmp_path / "source.flac"
@@ -296,7 +342,7 @@ def test_remove_managed_hook_keeps_unrelated_event_when_no_managed_command(tmp_p
     assert config["hooks"]["Stop"][0]["hooks"][0]["command"] == "echo keep"
 
 
-def test_generated_notify_script_reads_runtime_suppression_config(tmp_path: Path) -> None:
+def test_generated_notify_script_reads_runtime_notification_switch(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     audio = tmp_path / "source.wav"
     audio.write_bytes(b"RIFF....WAVEfmt ")
@@ -305,12 +351,13 @@ def test_generated_notify_script_reads_runtime_suppression_config(tmp_path: Path
 
     script = paths.notify_script_path.read_text(encoding="utf-8-sig")
     assert "function Get-NotifyConfig" in script
-    assert "function Test-SuppressWhenVSCodeFocused" in script
-    assert "suppressWhenVSCodeFocused" in script
-    assert "GetForegroundWindow" in script
-    assert "GetWindowThreadProcessId" in script
-    assert "'Code', 'Code - Insiders'" in script
-    assert "Test-VSCodeForeground" in script
+    assert "function Test-NotificationsEnabled" in script
+    assert "function Write-NotifyLog" in script
+    assert "notificationsEnabled" in script
+    assert "skipped-disabled" in script
+    assert "shown" in script
+    assert "Test-VSCodeForeground" not in script
+    assert "GetForegroundWindow" not in script
     assert "return" in script
 
 
@@ -335,18 +382,18 @@ def test_generated_notify_script_uses_custom_card_toast_instead_of_balloon_tip(t
     assert "Open VS Code" not in script
     assert 'Width="340"' in script
     assert 'Height="92"' in script
-    assert '<ColumnDefinition Width="44" />' in script
-    assert 'Width="30"' in script
+    assert '<ColumnDefinition Width="38" />' in script
+    assert 'Width="24"' in script
     assert 'Width="22"' in script
     assert 'WindowStyle="None"' in script
     assert 'AllowsTransparency="True"' in script
     assert 'CornerRadius="18"' in script
     assert "DropShadowEffect" in script
     assert "TopMost = $true" in script
-    assert 'VerticalAlignment="Center"' in script
+    assert 'VerticalAlignment="Top"' in script
     assert "closeButton" in script
-    assert "#F8FBFF" in script
-    assert "#111827" in script
+    assert "#FAFBFD" in script
+    assert "#1D1D1F" in script
     assert "macOSNoticeCard" in script
     assert "Show-ToastNotice -Title $notice[0] -Message $notice[1]" in script
 

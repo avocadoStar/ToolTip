@@ -2,7 +2,7 @@
 
 这是一个 Windows 桌面 GUI 工具，用来给 Codex 和 Claude Code 配置任务完成/等待确认提示。
 
-它会生成共享通知脚本，自动合并用户级 Hook 配置，并支持一键取消配置。取消配置时只移除本工具写入的 Hook，同时删除 `C:\Users\用户名\.agent-notify` 托管目录。
+它会生成共享通知脚本，自动合并用户级 Hook 配置，并支持关闭窗口后驻留系统托盘。通知是否显示由应用里的总开关控制，取消配置时只移除本工具写入的 Hook，同时删除 `C:\Users\用户名\.agent-notify` 托管目录。
 
 ## 文件
 
@@ -15,7 +15,7 @@ ToolTip/
 |-- agent_notify_hooks.py           # Hook 命令生成、合并、移除和状态检测
 |-- agent_notify_script.py          # 共享 PowerShell 通知脚本模板
 |-- build_windows.py                # Windows 下用 PyInstaller 构建 EXE
-|-- requirements.txt                # 运行、测试和打包依赖
+|-- requirements.txt                # 运行、测试、托盘和打包依赖
 |-- assets/
 |   |-- lingxi_icon.svg             # 应用图标源文件
 |   |-- lingxi_icon.ico             # Windows EXE/任务栏图标
@@ -36,13 +36,15 @@ ToolTip/
 dist\灵犀提醒.exe
 ```
 
-界面中按顺序操作：
+主界面默认只展示常用设置：
 
-1. 可选：点击 `Browse` 选择一个 `.wav` 或 `.mp3` 提示音；不选择时仍可继续生成脚本和安装 Hook，通知将静音显示。
-2. 点击 `Generate script` 生成共享通知脚本。
-3. 点击 `Install hooks` 写入已安装工具的用户级 Hook 配置；如果只安装了 Codex 或只安装了 Claude Code，则只配置对应工具。
-4. 点击 `Test notice` 测试声音和右下角通知。
-5. 需要撤销时点击 `Uninstall`。
+1. `通知`：开启或暂停所有提醒。
+2. `连接`：连接 Codex 与 Claude Code；如果只安装了 Codex 或只安装了 Claude Code，则只配置对应工具。
+3. `提示音`：可选 `.wav` 或 `.mp3` 提示音；不选择时通知将静音显示。
+
+低频操作在 `更多` 中：测试通知、生成脚本、复制配置摘要、查看诊断日志、撤销配置。
+
+关闭主窗口不会退出程序，灵犀提醒会隐藏到系统托盘。托盘菜单只提供 `打开主面板`、`开启/关闭通知`、`退出程序`。
 
 Codex 首次触发 Hook 时，可能还需要在 Codex 中通过 `/hooks` 信任该命令。
 
@@ -74,6 +76,7 @@ settings.json.bak.YYYYMMDD-HHMMSS
 - 取消配置只移除包含 `AgentNotifyConfigurator` 标记的 Hook。
 - 删除目录前会校验目标目录名必须是 `.agent-notify`。
 - 支持 WAV 和 MP3 音频；其他格式会直接报错，避免静默失败。
+- 诊断日志只记录通知来源、事件和展示/跳过结果，不记录密钥、环境变量或用户输入。
 
 ## 从源码运行
 

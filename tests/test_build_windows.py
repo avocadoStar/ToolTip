@@ -13,8 +13,11 @@ def test_build_command_creates_onefile_windowed_customtkinter_exe() -> None:
     assert "--windowed" in command
     assert "--collect-all" in command
     assert "customtkinter" in command
+    assert "pystray" in command
+    assert "PIL" in command
     assert "--hidden-import" in command
     assert "darkdetect" in command
+    assert "pystray._win32" in command
     assert "--icon" in command
     assert str(ICON_PATH) in command
     assert "--add-data" in command

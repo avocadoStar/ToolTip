@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import threading
 import time
@@ -8,26 +9,33 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
+try:
+    import pystray
+    from PIL import Image
+except ImportError:  # Dependencies are validated when tray mode is used.
+    pystray = None
+    Image = None
+
 from agent_notify_core import (
     default_paths,
     ensure_shared_script,
     get_status,
     install_hooks,
+    load_notifications_enabled,
     load_saved_audio_path,
-    load_suppress_when_vscode_focused,
     run_notice_test,
-    save_suppress_when_vscode_focused,
+    save_notifications_enabled,
     uninstall_hooks,
 )
 from agent_notify_ui_components import (
     COLORS,
     FONT,
-    ActionRow,
     IconCanvas,
-    PreviewBox,
-    SettingSection,
+    SIDEBAR_WIDTH,
+    SettingRow,
+    SettingsList,
     SidebarItem,
-    StatusRow,
+    SubtleButton,
 )
 
 
@@ -47,325 +55,280 @@ class AgentNotifyApp(ctk.CTk):
         self.withdraw()
         self.paths = default_paths()
         self.audio_var = ctk.StringVar(value=load_saved_audio_path(self.paths))
-        self.suppress_when_vscode_focused_var = ctk.BooleanVar(
-            value=load_suppress_when_vscode_focused(self.paths)
-        )
+        self.notifications_enabled_var = ctk.BooleanVar(value=load_notifications_enabled(self.paths))
+        self.current_page = ctk.StringVar(value="notifications")
         self.status_var = ctk.StringVar(value="就绪。")
-        self.audio_status_var = ctk.StringVar(value="未选择，将静音显示通知")
-        self.script_status_var = ctk.StringVar(value="尚未生成")
-        self.hook_status_var = ctk.StringVar(value="尚未安装")
-        self.test_status_var = ctk.StringVar(value="尚未测试")
-        self.uninstall_status_var = ctk.StringVar(value="尚未安装")
-        self.suppress_status_var = ctk.StringVar(value="已开启" if self.suppress_when_vscode_focused_var.get() else "已关闭")
+        self.notification_status_var = ctk.StringVar(value="已启用")
+        self.codex_status_var = ctk.StringVar(value="未连接")
+        self.claude_status_var = ctk.StringVar(value="未连接")
+        self.audio_status_var = ctk.StringVar(value="未设置")
+        self.script_status_var = ctk.StringVar(value="未生成")
+        self.sidebar_items: dict[str, SidebarItem] = {}
         self.notice_tested = False
         self.loading_popup: ctk.CTkToplevel | None = None
         self.loading_started_at = 0.0
         self.action_running = False
-        self.status_rows: dict[str, StatusRow] = {}
+        self.repaint_after_id: str | None = None
+        self.content_built = False
+        self.tray_icon = None
+        self.tray_started = False
+        self.is_quitting = False
 
         self.title(APP_TITLE)
         self._apply_window_icon()
-        self.geometry("1180x760")
-        self.minsize(980, 680)
-        self.configure(fg_color=COLORS["bg"])
-        self.bind("<Map>", self._on_window_mapped, add="+")
+        self.geometry("1080x700")
+        self.minsize(920, 620)
+        self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
+        self._apply_window_background()
+        self.bind("<Map>", self._on_window_paint_event, add="+")
+        self.bind("<Configure>", self._on_window_paint_event, add="+")
+        self.bind("<Visibility>", self._on_window_paint_event, add="+")
 
         self._build_ui()
-        self.refresh_status()
-        self.after_idle(self.deiconify)
+        self._init_tray()
+        self.after_idle(self._show_initial_window)
 
     def _apply_window_icon(self) -> None:
         if WINDOW_ICON_PATH.exists():
             self.iconbitmap(str(WINDOW_ICON_PATH))
 
-    def _on_window_mapped(self, event) -> None:
+    def _on_window_paint_event(self, event) -> None:
         if event.widget is self:
-            self.after_idle(self._refresh_window_paint)
+            self._schedule_repaint()
 
-    def _refresh_window_paint(self) -> None:
+    def _schedule_repaint(self) -> None:
         if not self.winfo_exists():
             return
+        if self.repaint_after_id is not None:
+            self.after_cancel(self.repaint_after_id)
+        self.repaint_after_id = self.after(24, self._refresh_window_paint)
+
+    def _refresh_window_paint(self) -> None:
+        self.repaint_after_id = None
+        if self.winfo_exists():
+            self._apply_window_background()
+
+    def _apply_window_background(self) -> None:
         self.configure(fg_color=COLORS["bg"])
-        self.update_idletasks()
+        if hasattr(self, "main_frame"):
+            self.main_frame.configure(fg_color=COLORS["bg"])
+        if hasattr(self, "content_scroll"):
+            self.content_scroll.configure(fg_color=COLORS["bg"])
+
+    def _show_initial_window(self) -> None:
+        self._apply_window_background()
+        self.deiconify()
+        self.after(35, self._finish_initial_render)
+
+    def _finish_initial_render(self) -> None:
+        if not self.content_built:
+            self._build_sidebar()
+            self.show_page(self.current_page.get())
+            self.content_built = True
+        self.refresh_status()
+        self._schedule_repaint()
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
-
         self._build_main()
         self._build_footer()
 
     def _build_main(self) -> None:
-        main = ctk.CTkFrame(self, fg_color=COLORS["bg"])
-        main.grid(row=0, column=0, sticky="nsew", padx=24, pady=(24, 10))
-        main.grid_columnconfigure(0, weight=0, minsize=280)
-        main.grid_columnconfigure(1, weight=1)
-        main.grid_rowconfigure(0, weight=1)
+        self.main_frame = ctk.CTkFrame(self, fg_color=COLORS["bg"], corner_radius=0)
+        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=32, pady=(28, 8))
+        self.main_frame.grid_columnconfigure(0, weight=0, minsize=SIDEBAR_WIDTH)
+        self.main_frame.grid_columnconfigure(1, weight=1)
+        self.main_frame.grid_rowconfigure(0, weight=1)
 
-        self.sidebar = ctk.CTkFrame(
-            main,
-            fg_color=COLORS["sidebar"],
-            border_color=COLORS["border"],
-            border_width=1,
-            corner_radius=22,
-            width=280,
-        )
-        self.sidebar.grid(row=0, column=0, sticky="ns", padx=(0, 18))
+        self.sidebar = ctk.CTkFrame(self.main_frame, fg_color=COLORS["sidebar"], corner_radius=0, width=SIDEBAR_WIDTH)
+        self.sidebar.grid(row=0, column=0, sticky="ns", padx=(0, 24))
         self.sidebar.grid_propagate(False)
         self.sidebar.grid_columnconfigure(0, weight=1)
 
         self.content_scroll = ctk.CTkScrollableFrame(
-            main,
+            self.main_frame,
             fg_color=COLORS["bg"],
-            scrollbar_button_color="#D1D1D6",
-            scrollbar_button_hover_color="#AEAEB2",
+            scrollbar_button_color=COLORS["scrollbar"],
+            scrollbar_button_hover_color=COLORS["scrollbar_hover"],
         )
         self.content_scroll.grid(row=0, column=1, sticky="nsew")
-        self.content_scroll.grid_columnconfigure(0, weight=1)
-
-        self._build_sidebar()
-        self._build_settings_content()
+        self.content_scroll.grid_columnconfigure(0, weight=1, minsize=640)
+        self.content_scroll.grid_columnconfigure(1, weight=1)
 
     def _build_sidebar(self) -> None:
         brand = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        brand.grid(row=0, column=0, sticky="ew", padx=18, pady=(22, 18))
+        brand.grid(row=0, column=0, sticky="ew", padx=8, pady=(4, 18))
         brand.grid_columnconfigure(1, weight=1)
-        IconCanvas(brand, "app", COLORS["blue"], COLORS["blue_light"], size=54).grid(row=0, column=0, rowspan=2, padx=(0, 12))
+        IconCanvas(brand, "app", COLORS["blue"], size=28).grid(row=0, column=0, padx=(2, 9), pady=3)
         ctk.CTkLabel(
             brand,
             text=APP_TITLE,
-            font=(FONT, 21, "bold"),
+            font=(FONT, 17, "bold"),
             text_color=COLORS["text"],
             anchor="w",
         ).grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(
-            brand,
-            text="AI Hook 通知设置",
-            font=(FONT, 12),
-            text_color=COLORS["muted"],
-            anchor="w",
-        ).grid(row=1, column=1, sticky="ew", pady=(3, 0))
 
-        status_card = ctk.CTkFrame(
-            self.sidebar,
-            fg_color=COLORS["glass"],
-            border_color=COLORS["border"],
-            border_width=1,
-            corner_radius=18,
-        )
-        status_card.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 18))
-        status_card.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(
-            status_card,
-            text="当前状态",
-            font=(FONT, 15, "bold"),
-            text_color=COLORS["text"],
-            anchor="w",
-        ).grid(row=0, column=0, sticky="ew", padx=16, pady=(16, 6))
-        rows = ctk.CTkFrame(status_card, fg_color="transparent")
-        rows.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 12))
-        rows.grid_columnconfigure(0, weight=1)
-        self.status_rows = {
-            "audio": StatusRow(rows, "提示音文件", COLORS["blue"]),
-            "script": StatusRow(rows, "脚本生成", COLORS["green"]),
-            "hook": StatusRow(rows, "Hook 安装", COLORS["purple"]),
-            "test": StatusRow(rows, "通知测试", COLORS["orange"]),
+        self.sidebar_items = {}
+        for index, item in enumerate(self._page_definitions(), start=1):
+            page_id, title, icon = item
+            nav_item = SidebarItem(
+                self.sidebar,
+                title,
+                icon,
+                command=lambda page_id=page_id: self.show_page(page_id),
+                selected=self.current_page.get() == page_id,
+            )
+            nav_item.grid(row=index, column=0, sticky="ew", padx=4, pady=(0, 4))
+            self.sidebar_items[page_id] = nav_item
+
+    def _page_definitions(self) -> list[tuple[str, str, str]]:
+        return [
+            ("notifications", "通知", "bell"),
+            ("connections", "连接", "link"),
+            ("audio", "提示音", "music"),
+            ("more", "更多", "more"),
+        ]
+
+    def show_page(self, page_id: str) -> None:
+        builders = {
+            "notifications": self._build_notifications_page,
+            "connections": self._build_connection_page,
+            "audio": self._build_audio_page,
+            "more": self._build_more_page,
         }
-        for index, row in enumerate(self.status_rows.values()):
-            row.grid(row=index, column=0, sticky="ew")
+        if page_id not in builders:
+            page_id = "notifications"
 
-        nav_items = [
-            ("选择提示音", "可选声音，也可静音显示", "folder", COLORS["blue"], COLORS["blue_light"]),
-            ("生成共享通知脚本", "写入 notify.ps1 与配置", "code", COLORS["green"], COLORS["green_light"]),
-            ("安装 Hook 配置", "只配置已安装工具", "puzzle", COLORS["purple"], COLORS["purple_light"]),
-            ("测试通知", "验证声音与横幅", "speaker", COLORS["orange"], COLORS["orange_light"]),
-            ("VS Code 活跃时静默", "离开 VS Code 后提醒", "monitor", COLORS["cyan"], COLORS["cyan_light"]),
-            ("撤销配置", "移除托管 Hook", "trash", COLORS["red"], COLORS["red_light"]),
-        ]
-        for index, item in enumerate(nav_items, start=2):
-            title, subtitle, icon, color, bg = item
-            SidebarItem(self.sidebar, title, subtitle, icon, color, bg).grid(row=index, column=0, sticky="ew", padx=12, pady=(0, 4))
+        self.current_page.set(page_id)
+        for item_id, item in self.sidebar_items.items():
+            item.set_selected(item_id == page_id)
 
-    def _build_settings_content(self) -> None:
+        self._clear_content()
+        builders[page_id]()
+        self._schedule_repaint()
+
+    def _clear_content(self) -> None:
+        for child in self.content_scroll.winfo_children():
+            child.destroy()
+
+    def _build_page_header(self, title: str) -> None:
         ctk.CTkLabel(
             self.content_scroll,
-            text="配置面板",
-            font=(FONT, 30, "bold"),
+            text=title,
+            font=(FONT, 28, "bold"),
             text_color=COLORS["text"],
             anchor="w",
-        ).grid(row=0, column=0, sticky="ew", padx=4, pady=(2, 4))
-        ctk.CTkLabel(
-            self.content_scroll,
-            text="为 Codex 和 Claude Code 配置提示音与右下角通知。所有设置都会写入本机用户级配置。",
-            font=(FONT, 14),
-            text_color=COLORS["muted"],
-            anchor="w",
-            wraplength=760,
-        ).grid(row=1, column=0, sticky="ew", padx=4, pady=(0, 18))
+        ).grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 18))
 
-        sections = [
-            self._build_audio_section,
-            self._build_script_section,
-            self._build_hook_section,
-            self._build_test_section,
-            self._build_suppression_section,
-            self._build_uninstall_section,
-            self._build_preview_section,
-        ]
-        for index, builder in enumerate(sections, start=2):
-            builder(index)
+    def _place_list(self, title: str) -> SettingsList:
+        settings_list = SettingsList(self.content_scroll, title)
+        settings_list.grid(row=1, column=0, sticky="ew", padx=2, pady=(0, 16))
+        return settings_list
 
-    def _add_section(self, row: int, title: str, description: str, icon: str, color: str, bg_color: str) -> SettingSection:
-        section = SettingSection(self.content_scroll, title, description, icon, color, bg_color)
-        section.grid(row=row, column=0, sticky="ew", padx=4, pady=(0, 14))
-        return section
+    def _build_notifications_page(self) -> None:
+        self._build_page_header("通知")
+        settings_list = self._place_list("通知")
+        SettingRow(settings_list.list, "状态", status_var=self.notification_status_var).grid(row=0, column=0, sticky="ew")
+        SettingRow(
+            settings_list.list,
+            "通知",
+            control_factory=lambda parent: ctk.CTkSwitch(
+                parent,
+                text="",
+                variable=self.notifications_enabled_var,
+                command=self.save_notification_preference,
+                width=48,
+                progress_color=COLORS["blue"],
+                button_color="#FFFFFF",
+                button_hover_color="#F2F2F4",
+            ),
+            is_last=True,
+        ).grid(row=1, column=0, sticky="ew")
 
-    def _build_audio_section(self, row: int) -> None:
-        section = self._add_section(
-            row,
-            "选择提示音",
-            "提示音可选；不选择时，通知会以静音横幅显示。",
-            "folder",
-            COLORS["blue"],
-            COLORS["blue_light"],
-        )
-        ActionRow(
-            section.body,
-            "提示音文件",
-            "支持 WAV 和 MP3。留空时不会阻止生成脚本或安装 Hook。",
-            status_var=self.audio_status_var,
-            button_text="选择文件",
-            button_color=COLORS["blue"],
-            command=self.choose_audio,
-        ).grid(row=0, column=0, sticky="ew")
+    def _build_connection_page(self) -> None:
+        self._build_page_header("连接")
+        settings_list = self._place_list("连接")
+        SettingRow(settings_list.list, "Codex", status_var=self.codex_status_var).grid(row=0, column=0, sticky="ew")
+        SettingRow(settings_list.list, "Claude Code", status_var=self.claude_status_var).grid(row=1, column=0, sticky="ew")
+        SettingRow(
+            settings_list.list,
+            "连接 Codex 与 Claude Code",
+            control_factory=lambda parent: SubtleButton(
+                parent,
+                "连接",
+                command=lambda: self.run_action("正在连接...", self.install, "连接完成。"),
+                primary=True,
+                width=92,
+            ),
+            is_last=True,
+        ).grid(row=2, column=0, sticky="ew")
 
-    def _build_script_section(self, row: int) -> None:
-        section = self._add_section(
-            row,
-            "生成共享通知脚本",
-            "根据当前偏好生成共享 PowerShell 通知脚本。",
-            "code",
-            COLORS["green"],
-            COLORS["green_light"],
-        )
-        ActionRow(
-            section.body,
-            "共享脚本",
-            "写入 ~/.agent-notify/notify.ps1 和 config.json。",
-            status_var=self.script_status_var,
-            button_text="生成脚本",
-            button_color=COLORS["green"],
-            command=lambda: self.run_action("正在生成共享通知脚本...", self.generate_script, "共享通知脚本已生成。"),
-        ).grid(row=0, column=0, sticky="ew")
+    def _build_audio_page(self) -> None:
+        self._build_page_header("提示音")
+        settings_list = self._place_list("提示音")
+        SettingRow(settings_list.list, "状态", status_var=self.audio_status_var).grid(row=0, column=0, sticky="ew")
+        SettingRow(
+            settings_list.list,
+            "提示音",
+            control_factory=lambda parent: SubtleButton(parent, "选择", command=self.choose_audio, width=92),
+            is_last=True,
+        ).grid(row=1, column=0, sticky="ew")
 
-    def _build_hook_section(self, row: int) -> None:
-        section = self._add_section(
-            row,
-            "安装 Hook 配置",
-            "将共享脚本写入 Codex 和 Claude Code 的用户级 Hook 配置。",
-            "puzzle",
-            COLORS["purple"],
-            COLORS["purple_light"],
-        )
-        ActionRow(
-            section.body,
-            "用户级 Hook",
-            "只配置已安装的工具，重复安装不会重复追加 Hook。",
-            status_var=self.hook_status_var,
-            button_text="安装 Hook",
-            button_color=COLORS["blue"],
-            command=lambda: self.run_action("正在写入 Hook...", self.install, "Hook 配置完成。"),
-        ).grid(row=0, column=0, sticky="ew")
-
-    def _build_test_section(self, row: int) -> None:
-        section = self._add_section(
-            row,
+    def _build_more_page(self) -> None:
+        self._build_page_header("更多")
+        settings_list = self._place_list("更多")
+        SettingRow(
+            settings_list.list,
             "测试通知",
-            "立即触发一次通知，确认声音和右下角横幅是否正常。",
-            "speaker",
-            COLORS["orange"],
-            COLORS["orange_light"],
-        )
-        ActionRow(
-            section.body,
-            "通知测试",
-            "会复用当前共享脚本和提示音设置。",
-            status_var=self.test_status_var,
-            button_text="测试通知",
-            button_color=COLORS["orange"],
-            button_text_color=COLORS["text"],
-            command=lambda: self.run_action("正在测试提示...", self.test_notice, "测试提示已完成。"),
+            control_factory=lambda parent: SubtleButton(
+                parent,
+                "测试",
+                command=lambda: self.run_action("正在测试通知...", self.test_notice, "测试通知已发送。"),
+                width=92,
+            ),
         ).grid(row=0, column=0, sticky="ew")
-
-    def _build_suppression_section(self, row: int) -> None:
-        section = self._add_section(
-            row,
-            "VS Code 活跃时静默（可选）",
-            "只有当前前台窗口是 VS Code 时，才不播放声音也不显示通知。",
-            "monitor",
-            COLORS["cyan"],
-            COLORS["cyan_light"],
-        )
-        ActionRow(
-            section.body,
-            "活跃窗口静默",
-            "离开 VS Code 后，Codex 或 Claude Code 需要您操作时会正常显示通知。",
-            status_var=self.suppress_status_var,
-            button_color=COLORS["blue"],
-            switch_var=self.suppress_when_vscode_focused_var,
-            switch_command=self.save_suppression_preference,
-        ).grid(row=0, column=0, sticky="ew")
-
-    def _build_uninstall_section(self, row: int) -> None:
-        section = self._add_section(
-            row,
+        SettingRow(
+            settings_list.list,
+            "生成脚本",
+            control_factory=lambda parent: SubtleButton(
+                parent,
+                "生成",
+                command=lambda: self.run_action("正在生成脚本...", self.generate_script, "脚本已生成。"),
+                width=92,
+            ),
+        ).grid(row=1, column=0, sticky="ew")
+        SettingRow(
+            settings_list.list,
+            "复制配置摘要",
+            control_factory=lambda parent: SubtleButton(parent, "复制", command=self.copy_summary, width=92),
+        ).grid(row=2, column=0, sticky="ew")
+        SettingRow(
+            settings_list.list,
+            "查看诊断日志",
+            control_factory=lambda parent: SubtleButton(parent, "打开", command=self.open_notify_log, width=92),
+        ).grid(row=3, column=0, sticky="ew")
+        SettingRow(
+            settings_list.list,
             "撤销配置",
-            "移除本工具写入的 Hook，并删除托管通知目录。",
-            "trash",
-            COLORS["red"],
-            COLORS["red_light"],
-        )
-        ActionRow(
-            section.body,
-            "托管配置",
-            "只移除带 AgentNotifyConfigurator 标记的 Hook。",
-            status_var=self.uninstall_status_var,
-            button_text="撤销配置",
-            button_color=COLORS["red"],
-            button_text_color=COLORS["red"],
-            command=self.confirm_uninstall,
-        ).grid(row=0, column=0, sticky="ew")
-
-    def _build_preview_section(self, row: int) -> None:
-        section = self._add_section(
-            row,
-            "配置预览",
-            "这些路径用于定位 Codex、Claude Code 和共享通知脚本。",
-            "app",
-            COLORS["blue"],
-            COLORS["blue_light"],
-        )
-        self.preview_text = (
-            "Codex config:\n"
-            "~/.codex/hooks.json\n\n"
-            "Claude config:\n"
-            "~/.claude/settings.json\n\n"
-            "Shared dir:\n"
-            "~/.agent-notify"
-        )
-        PreviewBox(section.body, self.preview_text, self.copy_preview).grid(row=0, column=0, sticky="ew")
+            control_factory=lambda parent: SubtleButton(
+                parent,
+                "撤销",
+                command=self.confirm_uninstall,
+                danger=True,
+                width=92,
+            ),
+            is_last=True,
+        ).grid(row=4, column=0, sticky="ew")
 
     def _build_footer(self) -> None:
         footer = ctk.CTkFrame(self, fg_color=COLORS["bg"], corner_radius=0)
-        footer.grid(row=1, column=0, sticky="ew", padx=30, pady=(0, 18))
+        footer.grid(row=1, column=0, sticky="ew", padx=34, pady=(0, 18))
         footer.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(
-            footer,
-            text="●",
-            font=(FONT, 13),
-            text_color=COLORS["blue"],
-        ).grid(row=0, column=0, padx=(0, 12))
+        ctk.CTkLabel(footer, text="●", font=(FONT, 11), text_color=COLORS["green"]).grid(
+            row=0, column=0, padx=(0, 10)
+        )
         ctk.CTkLabel(
             footer,
             textvariable=self.status_var,
@@ -374,6 +337,59 @@ class AgentNotifyApp(ctk.CTk):
             anchor="w",
         ).grid(row=0, column=1, sticky="ew")
 
+    def _init_tray(self) -> None:
+        if pystray is None or Image is None:
+            return
+        image = self._load_tray_image()
+        self.tray_icon = pystray.Icon(APP_TITLE, image, APP_TITLE, self._make_tray_menu())
+        self.tray_icon.run_detached()
+        self.tray_started = True
+
+    def _load_tray_image(self):
+        if WINDOW_ICON_PATH.exists():
+            return Image.open(WINDOW_ICON_PATH)
+        return Image.new("RGBA", (64, 64), (0, 113, 227, 255))
+
+    def _make_tray_menu(self):
+        notify_text = "关闭通知" if self.notifications_enabled() else "开启通知"
+        return pystray.Menu(
+            pystray.MenuItem("打开主面板", lambda: self.after(0, self.show_main_window)),
+            pystray.MenuItem(notify_text, lambda: self.after(0, self.toggle_notifications_from_tray)),
+            pystray.MenuItem("退出程序", lambda: self.after(0, self.quit_app)),
+        )
+
+    def _refresh_tray_menu(self) -> None:
+        if self.tray_icon is None:
+            return
+        self.tray_icon.menu = self._make_tray_menu()
+        self.tray_icon.update_menu()
+
+    def hide_to_tray(self) -> None:
+        if pystray is None or Image is None:
+            messagebox.showerror(APP_TITLE, "缺少系统托盘依赖，请重新安装 requirements.txt。")
+            return
+        self.withdraw()
+        self.status_var.set("灵犀提醒已在后台运行。")
+
+    def show_main_window(self) -> None:
+        self.deiconify()
+        self.lift()
+        self.focus_force()
+        self.refresh_status()
+
+    def quit_app(self) -> None:
+        self.is_quitting = True
+        if self.tray_icon is not None:
+            self.tray_icon.stop()
+            self.tray_icon = None
+        self.destroy()
+
+    def destroy(self) -> None:
+        if not self.is_quitting and self.tray_icon is not None:
+            self.tray_icon.stop()
+            self.tray_icon = None
+        super().destroy()
+
     def choose_audio(self) -> None:
         path = filedialog.askopenfilename(
             title="选择提示音（可选）",
@@ -381,8 +397,7 @@ class AgentNotifyApp(ctk.CTk):
         )
         if path:
             self.audio_var.set(path)
-            self.audio_status_var.set("已选择文件")
-            self.status_var.set("已选择提示音文件。")
+            self.status_var.set("提示音已设置。")
             self.refresh_status()
 
     def selected_audio(self) -> Path | None:
@@ -391,26 +406,31 @@ class AgentNotifyApp(ctk.CTk):
             return None
         return Path(value)
 
-    def suppress_when_vscode_focused(self) -> bool:
-        return bool(self.suppress_when_vscode_focused_var.get())
+    def notifications_enabled(self) -> bool:
+        return bool(self.notifications_enabled_var.get())
 
-    def save_suppression_preference(self) -> None:
-        save_suppress_when_vscode_focused(self.paths, self.suppress_when_vscode_focused())
-        self.suppress_status_var.set("已开启" if self.suppress_when_vscode_focused() else "已关闭")
-        self.status_var.set("VS Code 活跃时静默设置已保存；离开 VS Code 后通知会正常显示。")
+    def save_notification_preference(self) -> None:
+        save_notifications_enabled(self.paths, self.notifications_enabled())
+        self.refresh_status()
+        self._refresh_tray_menu()
+        self.status_var.set("通知已启用。" if self.notifications_enabled() else "通知已暂停。")
+
+    def toggle_notifications_from_tray(self) -> None:
+        self.notifications_enabled_var.set(not self.notifications_enabled())
+        self.save_notification_preference()
 
     def generate_script(self) -> None:
         ensure_shared_script(
             self.selected_audio(),
             self.paths,
-            suppress_when_vscode_focused=self.suppress_when_vscode_focused(),
+            notifications_enabled=self.notifications_enabled(),
         )
 
     def install(self) -> None:
         install_hooks(
             self.selected_audio(),
             self.paths,
-            suppress_when_vscode_focused=self.suppress_when_vscode_focused(),
+            notifications_enabled=self.notifications_enabled(),
         )
 
     def test_notice(self) -> None:
@@ -419,28 +439,44 @@ class AgentNotifyApp(ctk.CTk):
 
     def confirm_uninstall(self) -> None:
         if not messagebox.askokcancel(
-            "Confirm uninstall",
-            f"将移除本工具写入的 Hook，并删除：\n{self.paths.agent_notify_dir}",
+            APP_TITLE,
+            "将移除本工具写入的连接配置，并删除本地通知文件。",
             icon="warning",
         ):
             return
-        self.run_action("正在移除 Hook 和托管目录...", lambda: uninstall_hooks(self.paths), "Hook 已移除。")
+        self.run_action("正在撤销配置...", lambda: uninstall_hooks(self.paths), "配置已撤销。")
 
-    def copy_preview(self) -> None:
+    def copy_summary(self) -> None:
+        status = get_status(self.paths)
+        summary = "\n".join(
+            [
+                f"Codex: {'connected' if status['codex'] else 'not connected'}",
+                f"Claude Code: {'connected' if status['claude'] else 'not connected'}",
+                f"Notifications: {'enabled' if self.notifications_enabled() else 'paused'}",
+                f"Audio: {'set' if bool(self.audio_var.get().strip()) else 'not set'}",
+            ]
+        )
         self.clipboard_clear()
-        self.clipboard_append(self.preview_text)
-        self.status_var.set("配置预览已复制。")
+        self.clipboard_append(summary)
+        self.status_var.set("配置摘要已复制。")
+
+    def open_notify_log(self) -> None:
+        if not self.paths.agent_notify_dir.exists():
+            self.paths.agent_notify_dir.mkdir(parents=True, exist_ok=True)
+        if not self.paths.notify_log_path.exists():
+            self.paths.notify_log_path.write_text("", encoding="utf-8")
+        os.startfile(self.paths.notify_log_path)
 
     def show_loading_popup(self, message: str) -> None:
         self.close_loading_popup()
         self.loading_started_at = time.monotonic()
         popup = ctk.CTkToplevel(self)
         popup.title(APP_TITLE)
-        popup.geometry("300x132")
+        popup.geometry("280x112")
         popup.resizable(False, False)
         popup.transient(self)
         popup.grab_set()
-        popup.configure(fg_color=COLORS["card"])
+        popup.configure(fg_color=COLORS["list"])
         popup.grid_columnconfigure(0, weight=1)
 
         progress = self._build_loading_popup(popup, message)
@@ -455,24 +491,18 @@ class AgentNotifyApp(ctk.CTk):
         ctk.CTkLabel(
             popup,
             text=message,
-            font=(FONT, 15, "bold"),
+            font=(FONT, 14),
             text_color=COLORS["text"],
         ).grid(row=0, column=0, sticky="ew", padx=24, pady=(24, 10))
-        ctk.CTkProgressBar(
+        progress = ctk.CTkProgressBar(
             popup,
             mode="indeterminate",
-            height=8,
+            height=6,
             progress_color=COLORS["blue"],
-            fg_color=COLORS["blue_light"],
-        ).grid(row=1, column=0, sticky="ew", padx=24, pady=(0, 12))
-        ctk.CTkLabel(
-            popup,
-            text="请稍候，正在处理当前步骤。",
-            font=(FONT, 12),
-            text_color=COLORS["muted"],
-        ).grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 20))
-
-        return popup.grid_slaves(row=1, column=0)[0]
+            fg_color=COLORS["blue_soft"],
+        )
+        progress.grid(row=1, column=0, sticky="ew", padx=24, pady=(0, 22))
+        return progress
 
     def close_loading_popup(self) -> None:
         if self.loading_popup is None:
@@ -485,7 +515,7 @@ class AgentNotifyApp(ctk.CTk):
 
     def finish_action_after_loading(self, callback) -> None:
         elapsed_ms = int((time.monotonic() - self.loading_started_at) * 1000)
-        delay_ms = max(0, 350 - elapsed_ms)
+        delay_ms = max(0, 300 - elapsed_ms)
         self.after(delay_ms, callback)
 
     def run_action(self, working: str, action, success: str) -> None:
@@ -526,25 +556,15 @@ class AgentNotifyApp(ctk.CTk):
     def refresh_status(self) -> None:
         status = get_status(self.paths)
         audio_selected = bool(self.audio_var.get().strip())
-        hook_ready = status["codex"] or status["claude"]
 
-        self._update_status_rows(status, audio_selected, hook_ready)
+        self.notification_status_var.set("已启用" if self.notifications_enabled() else "已暂停")
+        self.codex_status_var.set("已连接" if status["codex"] else "未连接")
+        self.claude_status_var.set("已连接" if status["claude"] else "未连接")
+        self.audio_status_var.set("已设置" if audio_selected else "未设置")
+        self.script_status_var.set("已生成" if status["script"] else "未生成")
 
-        if self.status_var.get() in {"就绪。", "状态已刷新。"}:
-            self.status_var.set("提示：提示音可选；离开 VS Code 后，Codex 或 Claude Code 需要您操作时会正常显示右下角通知。")
-
-    def _update_status_rows(self, status: dict, audio_selected: bool, hook_ready: bool) -> None:
-        self.audio_status_var.set("已选择文件" if audio_selected else "未选择，将静音显示通知")
-        self.script_status_var.set("已生成" if status["script"] else "尚未生成")
-        self.hook_status_var.set("已安装" if hook_ready else "尚未安装")
-        self.uninstall_status_var.set("可撤销" if hook_ready else "尚未安装")
-        self.test_status_var.set("已测试" if self.notice_tested else "尚未测试")
-        self.suppress_status_var.set("已开启" if self.suppress_when_vscode_focused() else "已关闭")
-
-        self.status_rows["audio"].set_text("已选择" if audio_selected else "静音显示")
-        self.status_rows["script"].set_text("已生成" if status["script"] else "未生成")
-        self.status_rows["hook"].set_text("已安装" if hook_ready else "未安装")
-        self.status_rows["test"].set_text("已测试" if self.notice_tested else "未测试")
+        if self.status_var.get() == "就绪。":
+            self.status_var.set("关闭窗口后，灵犀提醒会安静驻留在系统托盘。")
 
 
 def main() -> None:
