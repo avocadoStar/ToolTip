@@ -25,91 +25,105 @@ APP_TITLE = "AI Hook 提示配置器"
 FONT = "Microsoft YaHei UI"
 
 COLORS = {
-    "bg": "#F6FAFF",
+    "bg": "#F5F5F7",
     "card": "#FFFFFF",
-    "card_soft": "#F9FBFF",
-    "border": "#D9E3F0",
-    "text": "#17233C",
-    "muted": "#51627F",
-    "muted_light": "#8492A8",
-    "blue": "#2563EB",
-    "blue_light": "#EAF2FF",
-    "green": "#2FB36D",
-    "green_light": "#E8F8EF",
-    "purple": "#7C3AED",
-    "purple_light": "#F1EAFE",
-    "orange": "#F59E0B",
-    "orange_light": "#FFF5E5",
-    "red": "#EF4444",
-    "red_light": "#FEEEEE",
-    "cyan": "#0EA5E9",
-    "cyan_light": "#E6F7FE",
-    "line": "#D4DEEB",
+    "card_soft": "#FBFBFD",
+    "visual_effect": "#FFFFFF",
+    "border": "#E5E5EA",
+    "text": "#1D1D1F",
+    "muted": "#6E6E73",
+    "muted_light": "#A1A1A6",
+    "blue": "#007AFF",
+    "blue_light": "#EAF4FF",
+    "green": "#34C759",
+    "green_light": "#EAF8EF",
+    "purple": "#AF52DE",
+    "purple_light": "#F7ECFC",
+    "orange": "#FF9F0A",
+    "orange_light": "#FFF4E2",
+    "red": "#FF3B30",
+    "red_light": "#FFF0EF",
+    "cyan": "#32ADE6",
+    "cyan_light": "#EAF8FE",
+    "line": "#D1D1D6",
+    "shadow": "#E9E9EE",
 }
 
 
 class IconCanvas(ctk.CTkFrame):
     def __init__(self, master, icon: str, color: str, bg_color: str) -> None:
-        super().__init__(master, width=72, height=72, fg_color=bg_color, corner_radius=18)
+        super().__init__(master, width=58, height=58, fg_color=bg_color, corner_radius=17)
         self.grid_propagate(False)
-        self.canvas = Canvas(self, width=44, height=44, bg=bg_color, bd=0, highlightthickness=0)
+        self.canvas = Canvas(self, width=34, height=34, bg=bg_color, bd=0, highlightthickness=0)
         self.canvas.place(relx=0.5, rely=0.5, anchor="center")
         self._draw_icon(icon, color)
 
     def _draw_icon(self, icon: str, color: str) -> None:
         if icon == "folder":
-            self.canvas.create_rectangle(8, 14, 38, 34, fill=color, outline=color, width=0)
-            self.canvas.create_rectangle(8, 10, 22, 18, fill=color, outline=color, width=0)
-            self.canvas.create_line(9, 14, 37, 14, fill="#7BB0FF", width=2)
+            self.canvas.create_arc(5, 11, 29, 31, start=180, extent=90, outline=color, width=3)
+            self.canvas.create_line(5, 21, 5, 28, fill=color, width=3)
+            self.canvas.create_line(6, 30, 29, 30, fill=color, width=3)
+            self.canvas.create_line(29, 16, 29, 30, fill=color, width=3)
+            self.canvas.create_line(6, 14, 14, 14, fill=color, width=3)
+            self.canvas.create_line(14, 14, 18, 18, fill=color, width=3)
+            self.canvas.create_line(18, 18, 29, 18, fill=color, width=3)
         elif icon == "code":
-            self.canvas.create_polygon(12, 6, 30, 6, 38, 14, 38, 38, 12, 38, fill=color, outline=color)
-            self.canvas.create_polygon(30, 6, 38, 14, 30, 14, fill="#A7F3D0", outline="#A7F3D0")
-            self.canvas.create_text(25, 27, text="</>", fill="white", font=("Consolas", 14, "bold"))
+            self.canvas.create_rectangle(7, 5, 27, 29, outline=color, width=3)
+            self.canvas.create_line(12, 15, 8, 18, 12, 21, fill=color, width=2)
+            self.canvas.create_line(22, 15, 26, 18, 22, 21, fill=color, width=2)
+            self.canvas.create_line(18, 13, 15, 23, fill=color, width=2)
         elif icon == "puzzle":
-            self.canvas.create_rectangle(12, 14, 34, 34, fill=color, outline=color)
-            self.canvas.create_oval(18, 6, 28, 16, fill=color, outline=color)
-            self.canvas.create_oval(4, 20, 16, 32, fill=color, outline=color)
-            self.canvas.create_oval(30, 20, 42, 32, fill=color, outline=color)
-            self.canvas.create_oval(18, 30, 28, 42, fill=color, outline=color)
+            self.canvas.create_rectangle(8, 10, 26, 28, outline=color, width=3)
+            self.canvas.create_oval(13, 4, 21, 12, outline=color, width=3)
+            self.canvas.create_oval(22, 15, 31, 23, outline=color, width=3)
+            self.canvas.create_line(17, 10, 17, 8, fill=color, width=3)
+            self.canvas.create_line(26, 19, 28, 19, fill=color, width=3)
         elif icon == "speaker":
-            self.canvas.create_polygon(8, 20, 18, 20, 30, 10, 30, 34, 18, 24, 8, 24, fill=color, outline=color)
-            self.canvas.create_arc(28, 14, 42, 30, start=-45, extent=90, style="arc", outline=color, width=3)
-            self.canvas.create_arc(25, 8, 48, 36, start=-45, extent=90, style="arc", outline=color, width=3)
+            self.canvas.create_polygon(5, 14, 12, 14, 22, 7, 22, 27, 12, 20, 5, 20, fill=color, outline=color)
+            self.canvas.create_arc(20, 12, 31, 22, start=-45, extent=90, style="arc", outline=color, width=2)
+            self.canvas.create_arc(17, 7, 35, 27, start=-45, extent=90, style="arc", outline=color, width=2)
         elif icon == "trash":
-            self.canvas.create_rectangle(13, 15, 34, 38, fill=color, outline=color)
-            self.canvas.create_rectangle(10, 11, 37, 15, fill=color, outline=color)
-            self.canvas.create_rectangle(18, 6, 29, 10, fill=color, outline=color)
-            for x in (18, 24, 30):
-                self.canvas.create_line(x, 20, x, 34, fill="white", width=2)
+            self.canvas.create_rectangle(9, 12, 25, 29, outline=color, width=3)
+            self.canvas.create_line(7, 10, 27, 10, fill=color, width=3)
+            self.canvas.create_line(13, 6, 21, 6, fill=color, width=3)
+            for x in (14, 20):
+                self.canvas.create_line(x, 16, x, 25, fill=color, width=2)
         elif icon == "monitor":
-            self.canvas.create_rectangle(8, 9, 38, 29, outline=color, width=3)
-            self.canvas.create_rectangle(19, 30, 27, 36, fill=color, outline=color)
-            self.canvas.create_rectangle(14, 36, 32, 39, fill=color, outline=color)
-            self.canvas.create_oval(31, 5, 41, 15, fill=color, outline=color)
+            self.canvas.create_rectangle(5, 6, 29, 22, outline=color, width=3)
+            self.canvas.create_line(14, 23, 20, 23, fill=color, width=3)
+            self.canvas.create_line(11, 29, 23, 29, fill=color, width=3)
+            self.canvas.create_line(17, 23, 17, 29, fill=color, width=3)
+            self.canvas.create_oval(23, 3, 32, 12, fill=color, outline=color)
 
 
 class TimelineMarker(ctk.CTkFrame):
     def __init__(self, master, number: str, show_top: bool, show_bottom: bool) -> None:
-        super().__init__(master, width=68, height=116, fg_color=COLORS["bg"], corner_radius=0)
+        super().__init__(master, width=52, height=98, fg_color=COLORS["bg"], corner_radius=0)
         self.grid_propagate(False)
         self.grid_columnconfigure(0, weight=1)
 
-        top_line = ctk.CTkFrame(self, width=1, height=16, fg_color=COLORS["line"] if show_top else COLORS["bg"])
+        top_line = ctk.CTkFrame(self, width=1, height=14, fg_color=COLORS["line"] if show_top else COLORS["bg"])
         top_line.grid(row=0, column=0, pady=0)
 
-        badge = ctk.CTkLabel(
+        badge = ctk.CTkFrame(
             self,
-            text=number,
-            width=36,
-            height=36,
-            fg_color=COLORS["blue"],
-            text_color="#FFFFFF",
-            font=(FONT, 15, "bold"),
-            corner_radius=18,
+            width=32,
+            height=32,
+            fg_color=COLORS["card"],
+            border_width=1,
+            border_color=COLORS["border"],
+            corner_radius=16,
         )
+        badge.grid_propagate(False)
         badge.grid(row=1, column=0)
+        ctk.CTkLabel(
+            badge,
+            text=number,
+            text_color=COLORS["blue"],
+            font=(FONT, 14, "bold"),
+        ).place(relx=0.5, rely=0.5, anchor="center")
 
-        bottom_line = ctk.CTkFrame(self, width=1, height=64, fg_color=COLORS["line"] if show_bottom else COLORS["bg"])
+        bottom_line = ctk.CTkFrame(self, width=1, height=52, fg_color=COLORS["line"] if show_bottom else COLORS["bg"])
         bottom_line.grid(row=2, column=0, pady=0, sticky="n")
 
 
@@ -136,29 +150,29 @@ class StepCard(ctk.CTkFrame):
             fg_color=COLORS["card"],
             border_color=COLORS["border"],
             border_width=1,
-            corner_radius=14,
+            corner_radius=18,
         )
         self.status_var = status_var
         self.grid_columnconfigure(1, weight=1)
 
-        IconCanvas(self, icon, icon_color, icon_bg).grid(row=0, column=0, rowspan=2, padx=(26, 22), pady=22)
+        IconCanvas(self, icon, icon_color, icon_bg).grid(row=0, column=0, rowspan=2, padx=(22, 18), pady=18)
         ctk.CTkLabel(
             self,
             text=title,
-            font=(FONT, 19, "bold"),
+            font=(FONT, 17, "bold"),
             text_color=COLORS["text"],
             anchor="w",
-        ).grid(row=0, column=1, sticky="sw", pady=(26, 4))
+        ).grid(row=0, column=1, sticky="sw", pady=(22, 4))
         ctk.CTkLabel(
             self,
             text=description,
             font=(FONT, 13),
             text_color=COLORS["muted"],
             anchor="w",
-        ).grid(row=1, column=1, sticky="nw", pady=(0, 24))
+        ).grid(row=1, column=1, sticky="nw", pady=(0, 20))
 
         action_frame = ctk.CTkFrame(self, fg_color="transparent")
-        action_frame.grid(row=0, column=2, rowspan=2, sticky="e", padx=(18, 26))
+        action_frame.grid(row=0, column=2, rowspan=2, sticky="e", padx=(16, 22))
         if switch_var is not None:
             ctk.CTkSwitch(
                 action_frame,
@@ -168,22 +182,22 @@ class StepCard(ctk.CTkFrame):
                 width=54,
                 progress_color=button_color,
                 button_color="#FFFFFF",
-                button_hover_color="#EEF4FF",
+                button_hover_color="#F2F2F7",
             ).pack(anchor="e", pady=(0, 13))
         elif button_text:
             transparent = button_text_color != "#FFFFFF"
             ctk.CTkButton(
                 action_frame,
                 text=button_text,
-                width=138,
-                height=38,
+                width=132,
+                height=36,
                 fg_color="transparent" if transparent else button_color,
-                hover_color="#F0F5FF" if transparent else button_color,
+                hover_color="#F2F2F7" if transparent else "#0A84FF",
                 border_width=1 if transparent else 0,
                 border_color=button_border_color or button_color,
                 text_color=button_text_color,
                 font=(FONT, 14),
-                corner_radius=8,
+                corner_radius=14,
                 command=command,
             ).pack(anchor="e", pady=(0, 13))
         ctk.CTkLabel(
@@ -199,19 +213,19 @@ class StatusRow(ctk.CTkFrame):
     def __init__(self, master, label: str, color: str) -> None:
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(1, weight=1)
-        self.dot = ctk.CTkLabel(self, text="●", width=18, font=(FONT, 16), text_color=color)
+        self.dot = ctk.CTkLabel(self, text="●", width=18, font=(FONT, 13), text_color=color)
         self.dot.grid(row=0, column=0, sticky="w", padx=(0, 8), pady=11)
         ctk.CTkLabel(
             self,
             text=label,
-            font=(FONT, 14),
+            font=(FONT, 13),
             text_color=COLORS["muted"],
             anchor="w",
         ).grid(row=0, column=1, sticky="ew", pady=11)
         self.value = ctk.CTkLabel(
             self,
             text="未选择",
-            font=(FONT, 14),
+            font=(FONT, 13, "bold"),
             text_color=COLORS["muted"],
             anchor="e",
         )
@@ -230,7 +244,7 @@ class AgentNotifyApp(ctk.CTk):
             value=load_suppress_when_vscode_focused(self.paths)
         )
         self.status_var = ctk.StringVar(value="就绪。")
-        self.audio_status_var = ctk.StringVar(value="未选择文件")
+        self.audio_status_var = ctk.StringVar(value="未选择，将静音显示通知")
         self.script_status_var = ctk.StringVar(value="尚未生成")
         self.hook_status_var = ctk.StringVar(value="尚未安装")
         self.test_status_var = ctk.StringVar(value="尚未测试")
@@ -241,8 +255,8 @@ class AgentNotifyApp(ctk.CTk):
         self.loading_started_at = 0.0
 
         self.title(APP_TITLE)
-        self.geometry("1280x820")
-        self.minsize(1180, 760)
+        self.geometry("1180x760")
+        self.minsize(1080, 700)
         ctk.set_appearance_mode("light")
         self.configure(fg_color=COLORS["bg"])
 
@@ -259,13 +273,13 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_header(self) -> None:
         header = ctk.CTkFrame(self, fg_color=COLORS["bg"], corner_radius=0)
-        header.grid(row=0, column=0, sticky="ew", padx=50, pady=(34, 14))
+        header.grid(row=0, column=0, sticky="ew", padx=42, pady=(28, 14))
         header.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(
             header,
             text=APP_TITLE,
-            font=(FONT, 30, "bold"),
+            font=(FONT, 28, "bold"),
             text_color=COLORS["text"],
             anchor="w",
         ).grid(row=0, column=0, sticky="w")
@@ -279,21 +293,21 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_main(self) -> None:
         main = ctk.CTkFrame(self, fg_color=COLORS["bg"])
-        main.grid(row=1, column=0, sticky="nsew", padx=50, pady=(0, 12))
+        main.grid(row=1, column=0, sticky="nsew", padx=42, pady=(0, 12))
         main.grid_columnconfigure(0, weight=1)
         main.grid_columnconfigure(1, weight=0)
         main.grid_rowconfigure(0, weight=1)
 
         left = ctk.CTkFrame(main, fg_color=COLORS["bg"])
-        left.grid(row=0, column=0, sticky="nsew", padx=(0, 28))
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 24))
         left.grid_columnconfigure(0, weight=1)
         left.grid_rowconfigure(0, weight=1)
 
         self.steps_scroll = ctk.CTkScrollableFrame(
             left,
             fg_color=COLORS["bg"],
-            scrollbar_button_color="#D6E2F1",
-            scrollbar_button_hover_color="#B9CAE1",
+            scrollbar_button_color="#D1D1D6",
+            scrollbar_button_hover_color="#AEAEB2",
         )
         self.steps_scroll.grid(row=0, column=0, sticky="nsew")
         self.steps_scroll.grid_columnconfigure(1, weight=1)
@@ -306,12 +320,12 @@ class AgentNotifyApp(ctk.CTk):
             (
                 "1",
                 "选择提示音",
-                "选择一个 .wav 或 .mp3 文件作为提示音。",
+                "提示音可选；不选择时，通知将静音显示。",
                 "folder",
                 COLORS["blue"],
                 COLORS["blue_light"],
                 self.audio_status_var,
-                "Browse",
+                "选择文件",
                 COLORS["blue"],
                 COLORS["blue"],
                 self.choose_audio,
@@ -319,12 +333,12 @@ class AgentNotifyApp(ctk.CTk):
             (
                 "2",
                 "生成共享通知脚本",
-                "根据当前设置生成通知脚本。",
+                "根据当前设置生成通知脚本，可不配置提示音。",
                 "code",
                 COLORS["green"],
                 COLORS["green_light"],
                 self.script_status_var,
-                "Generate script",
+                "生成脚本",
                 COLORS["green"],
                 "#FFFFFF",
                 lambda: self.run_action("正在生成共享通知脚本...", self.generate_script, "共享通知脚本已生成。"),
@@ -337,7 +351,7 @@ class AgentNotifyApp(ctk.CTk):
                 COLORS["purple"],
                 COLORS["purple_light"],
                 self.hook_status_var,
-                "Install hooks",
+                "安装 Hook",
                 COLORS["blue"],
                 "#FFFFFF",
                 lambda: self.run_action("正在写入 Hook...", self.install, "Hook 配置完成。"),
@@ -350,7 +364,7 @@ class AgentNotifyApp(ctk.CTk):
                 COLORS["orange"],
                 COLORS["orange_light"],
                 self.test_status_var,
-                "Test notice",
+                "测试通知",
                 COLORS["muted"],
                 COLORS["text"],
                 lambda: self.run_action("正在测试提示...", self.test_notice, "测试提示已完成。"),
@@ -363,7 +377,7 @@ class AgentNotifyApp(ctk.CTk):
                 COLORS["red"],
                 COLORS["red_light"],
                 self.uninstall_status_var,
-                "Uninstall",
+                "撤销配置",
                 COLORS["red"],
                 COLORS["red"],
                 self.confirm_uninstall,
@@ -413,7 +427,7 @@ class AgentNotifyApp(ctk.CTk):
         ).grid(row=5, column=1, sticky="ew", pady=(0, 0))
 
     def _build_side_panel(self, master) -> None:
-        side = ctk.CTkFrame(master, fg_color=COLORS["bg"], width=310)
+        side = ctk.CTkFrame(master, fg_color=COLORS["bg"], width=330)
         side.grid(row=0, column=1, sticky="nsew")
         side.grid_columnconfigure(0, weight=1)
 
@@ -422,14 +436,14 @@ class AgentNotifyApp(ctk.CTk):
             fg_color=COLORS["card"],
             border_color=COLORS["border"],
             border_width=1,
-            corner_radius=14,
+            corner_radius=18,
         )
         status_card.grid(row=0, column=0, sticky="ew", pady=(0, 22))
         status_card.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(
             status_card,
             text="当前状态",
-            font=(FONT, 19, "bold"),
+            font=(FONT, 17, "bold"),
             text_color=COLORS["text"],
             anchor="w",
         ).grid(row=0, column=0, sticky="ew", padx=24, pady=(26, 12))
@@ -451,14 +465,14 @@ class AgentNotifyApp(ctk.CTk):
             fg_color=COLORS["card"],
             border_color=COLORS["border"],
             border_width=1,
-            corner_radius=14,
+            corner_radius=18,
         )
         preview_card.grid(row=1, column=0, sticky="ew")
         preview_card.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(
             preview_card,
             text="配置预览",
-            font=(FONT, 19, "bold"),
+            font=(FONT, 17, "bold"),
             text_color=COLORS["text"],
             anchor="w",
         ).grid(row=0, column=0, sticky="ew", padx=24, pady=(26, 16))
@@ -468,7 +482,7 @@ class AgentNotifyApp(ctk.CTk):
             fg_color=COLORS["card_soft"],
             border_color=COLORS["border"],
             border_width=1,
-            corner_radius=10,
+            corner_radius=14,
         )
         preview_box.grid(row=1, column=0, sticky="ew", padx=24, pady=(0, 24))
         preview_box.grid_columnconfigure(0, weight=1)
@@ -505,13 +519,13 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_footer(self) -> None:
         footer = ctk.CTkFrame(self, fg_color=COLORS["bg"], corner_radius=0)
-        footer.grid(row=2, column=0, sticky="ew", padx=50, pady=(0, 22))
+        footer.grid(row=2, column=0, sticky="ew", padx=42, pady=(0, 22))
         footer.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(
             footer,
             text="●",
-            font=(FONT, 18),
-            text_color="#91A0B8",
+            font=(FONT, 13),
+            text_color=COLORS["blue"],
         ).grid(row=0, column=0, padx=(0, 12))
         ctk.CTkLabel(
             footer,
@@ -523,7 +537,7 @@ class AgentNotifyApp(ctk.CTk):
 
     def choose_audio(self) -> None:
         path = filedialog.askopenfilename(
-            title="选择提示音",
+            title="选择提示音（可选）",
             filetypes=[("音频文件", "*.wav *.mp3"), ("WAV 文件", "*.wav"), ("MP3 文件", "*.mp3")],
         )
         if path:
@@ -532,10 +546,10 @@ class AgentNotifyApp(ctk.CTk):
             self.status_var.set("已选择提示音文件。")
             self.refresh_status()
 
-    def selected_audio(self) -> Path:
+    def selected_audio(self) -> Path | None:
         value = self.audio_var.get().strip()
         if not value:
-            raise ValueError("请先选择一个 WAV 或 MP3 提示音文件。")
+            return None
         return Path(value)
 
     def suppress_when_vscode_focused(self) -> bool:
@@ -583,7 +597,7 @@ class AgentNotifyApp(ctk.CTk):
         self.loading_started_at = time.monotonic()
         popup = ctk.CTkToplevel(self)
         popup.title(APP_TITLE)
-        popup.geometry("320x138")
+        popup.geometry("300x132")
         popup.resizable(False, False)
         popup.transient(self)
         popup.grab_set()
@@ -595,20 +609,20 @@ class AgentNotifyApp(ctk.CTk):
             text=message,
             font=(FONT, 15, "bold"),
             text_color=COLORS["text"],
-        ).grid(row=0, column=0, sticky="ew", padx=28, pady=(26, 10))
+        ).grid(row=0, column=0, sticky="ew", padx=24, pady=(24, 10))
         ctk.CTkProgressBar(
             popup,
             mode="indeterminate",
             height=8,
             progress_color=COLORS["blue"],
             fg_color=COLORS["blue_light"],
-        ).grid(row=1, column=0, sticky="ew", padx=28, pady=(0, 12))
+        ).grid(row=1, column=0, sticky="ew", padx=24, pady=(0, 12))
         ctk.CTkLabel(
             popup,
             text="请稍候，正在处理当前步骤。",
             font=(FONT, 12),
             text_color=COLORS["muted"],
-        ).grid(row=2, column=0, sticky="ew", padx=28, pady=(0, 22))
+        ).grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 20))
 
         progress = popup.grid_slaves(row=1, column=0)[0]
         progress.start()
@@ -667,20 +681,20 @@ class AgentNotifyApp(ctk.CTk):
         audio_selected = bool(self.audio_var.get().strip())
         hook_ready = status["codex"] or status["claude"]
 
-        self.audio_status_var.set("已选择文件" if audio_selected else "未选择文件")
+        self.audio_status_var.set("已选择文件" if audio_selected else "未选择，将静音显示通知")
         self.script_status_var.set("已生成" if status["script"] else "尚未生成")
         self.hook_status_var.set("已安装" if hook_ready else "尚未安装")
         self.uninstall_status_var.set("可撤销" if hook_ready else "尚未安装")
         self.test_status_var.set("已测试" if self.notice_tested else "尚未测试")
         self.suppress_status_var.set("已开启" if self.suppress_when_vscode_focused() else "已关闭")
 
-        self.status_rows["audio"].set_text("已选择" if audio_selected else "未选择")
+        self.status_rows["audio"].set_text("已选择" if audio_selected else "静音显示")
         self.status_rows["script"].set_text("已生成" if status["script"] else "未生成")
         self.status_rows["hook"].set_text("已安装" if hook_ready else "未安装")
         self.status_rows["test"].set_text("已测试" if self.notice_tested else "未测试")
 
         if self.status_var.get() in {"就绪。", "状态已刷新。"}:
-            self.status_var.set("提示：安装后，当 Codex 或 Claude Code 需要您操作时，将播放提示音并显示右下角通知。")
+            self.status_var.set("提示：提示音可选；未选择时，当 Codex 或 Claude Code 需要您操作会静音显示右下角通知。")
 
 
 def main() -> None:

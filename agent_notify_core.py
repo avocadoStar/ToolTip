@@ -165,41 +165,42 @@ def is_event_configured(path: Path, event: str, paths: AgentNotifyPaths) -> bool
 
 
 def ensure_shared_script(
-    audio_path: Path,
+    audio_path: Path | None,
     paths: AgentNotifyPaths,
     suppress_when_vscode_focused: bool = True,
 ) -> None:
-    audio_path = audio_path.expanduser()
-    if not audio_path.exists():
-        raise FileNotFoundError(f"Audio file does not exist: {audio_path}")
-    suffix = audio_path.suffix.lower()
-    if suffix not in SUPPORTED_AUDIO_SUFFIXES:
-        raise ValueError("Only WAV and MP3 audio files are supported.")
-
     paths.agent_notify_dir.mkdir(parents=True, exist_ok=True)
     for old_suffix in SUPPORTED_AUDIO_SUFFIXES:
         old_audio = paths.managed_audio_path(old_suffix)
         if old_audio.exists():
             old_audio.unlink()
 
-    managed_audio_path = paths.managed_audio_path(suffix)
-    shutil.copy2(audio_path, managed_audio_path)
+    config = {
+        "app": MANAGED_BY,
+        "notifyScript": str(paths.notify_script_path),
+        "suppressWhenVSCodeFocused": bool(suppress_when_vscode_focused),
+        "updatedAt": datetime.now().astimezone().isoformat(),
+    }
+
+    if audio_path is not None:
+        audio_path = audio_path.expanduser()
+        if not audio_path.exists():
+            raise FileNotFoundError(f"Audio file does not exist: {audio_path}")
+        suffix = audio_path.suffix.lower()
+        if suffix not in SUPPORTED_AUDIO_SUFFIXES:
+            raise ValueError("Only WAV and MP3 audio files are supported.")
+
+        managed_audio_path = paths.managed_audio_path(suffix)
+        shutil.copy2(audio_path, managed_audio_path)
+        config["managedAudio"] = str(managed_audio_path)
+        config["originalAudio"] = str(audio_path)
+
     paths.notify_script_path.write_text(get_notify_script_content(), encoding="utf-8-sig")
-    write_json(
-        paths.config_path,
-        {
-            "app": MANAGED_BY,
-            "notifyScript": str(paths.notify_script_path),
-            "managedAudio": str(managed_audio_path),
-            "originalAudio": str(audio_path),
-            "suppressWhenVSCodeFocused": bool(suppress_when_vscode_focused),
-            "updatedAt": datetime.now().astimezone().isoformat(),
-        },
-    )
+    write_json(paths.config_path, config)
 
 
 def install_hooks(
-    audio_path: Path,
+    audio_path: Path | None,
     paths: AgentNotifyPaths,
     suppress_when_vscode_focused: bool = True,
 ) -> None:
@@ -366,8 +367,12 @@ function Get-NoticeText {
 function Resolve-AudioPath {
     $config = Get-NotifyConfig
     if ($null -ne $config) {
-        if ($config.managedAudio -and (Test-Path -LiteralPath $config.managedAudio)) {
-            return [string]$config.managedAudio
+        $managedAudio = $config.PSObject.Properties['managedAudio']
+        if ($null -ne $managedAudio -and $managedAudio.Value) {
+            if (Test-Path -LiteralPath $managedAudio.Value) {
+                return [string]$managedAudio.Value
+            }
+            throw "Managed audio file does not exist: $($managedAudio.Value)"
         }
     }
 
@@ -378,7 +383,7 @@ function Resolve-AudioPath {
         }
     }
 
-    throw "Managed audio file does not exist."
+    return $null
 }
 
 function Test-SuppressWhenVSCodeFocused {
@@ -468,8 +473,8 @@ function Show-ToastNotice {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="AI Hook 提示"
-        Width="760"
-        Height="220"
+        Width="360"
+        Height="120"
         WindowStyle="None"
         AllowsTransparency="True"
         ResizeMode="NoResize"
@@ -481,31 +486,31 @@ function Show-ToastNotice {
     <Border Background="#F8FBFF"
             BorderBrush="#D9E4F2"
             BorderThickness="1"
-            CornerRadius="20">
+            CornerRadius="16">
         <Border.Effect>
             <DropShadowEffect Color="#8AA3C2"
-                              BlurRadius="26"
-                              ShadowDepth="4"
-                              Opacity="0.28" />
+                              BlurRadius="18"
+                              ShadowDepth="3"
+                              Opacity="0.22" />
         </Border.Effect>
-        <Grid Margin="42,40,38,30">
+        <Grid Margin="18,16,16,14">
             <Grid.RowDefinitions>
-                <RowDefinition Height="78" />
+                <RowDefinition Height="44" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="72" />
+                <ColumnDefinition Width="46" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="58" />
+                <ColumnDefinition Width="32" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Row="0"
                     Grid.Column="0"
-                    Width="58"
-                    Height="58"
+                    Width="34"
+                    Height="34"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
-                    CornerRadius="14">
+                    CornerRadius="9">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#2F8BFF" Offset="0" />
@@ -513,9 +518,9 @@ function Show-ToastNotice {
                     </LinearGradientBrush>
                 </Border.Background>
                 <Grid>
-                    <Ellipse Width="34" Height="34" Fill="#FFFFFF" Opacity="0.96" />
-                    <Ellipse Width="17" Height="17" Fill="#1368FF" HorizontalAlignment="Right" Margin="0,0,9,0" />
-                    <Ellipse Width="11" Height="11" Fill="#BBD7FF" HorizontalAlignment="Left" Margin="17,0,0,0" />
+                    <Ellipse Width="20" Height="20" Fill="#FFFFFF" Opacity="0.96" />
+                    <Ellipse Width="10" Height="10" Fill="#1368FF" HorizontalAlignment="Right" Margin="0,0,5,0" />
+                    <Ellipse Width="7" Height="7" Fill="#BBD7FF" HorizontalAlignment="Left" Margin="10,0,0,0" />
                 </Grid>
             </Border>
 
@@ -524,15 +529,15 @@ function Show-ToastNotice {
                        Grid.Column="1"
                        VerticalAlignment="Top"
                        TextTrimming="CharacterEllipsis"
-                       FontSize="32"
+                       FontSize="18"
                        FontWeight="SemiBold"
                        Foreground="#111827" />
 
             <Button Name="closeButton"
                     Grid.Row="0"
                     Grid.Column="2"
-                    Width="42"
-                    Height="42"
+                    Width="28"
+                    Height="28"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Top"
                     Content="×"
@@ -541,23 +546,23 @@ function Show-ToastNotice {
                     BorderBrush="Transparent"
                     BorderThickness="0"
                     Padding="0"
-                    FontSize="34"
+                    FontSize="24"
                     FontWeight="Light"
                     Foreground="#3F3F46" />
 
             <Border Grid.Row="1"
                     Grid.Column="0"
-                    Width="58"
-                    Height="58"
+                    Width="34"
+                    Height="34"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
-                    CornerRadius="29"
+                    CornerRadius="17"
                     Background="#DDE9FF">
                 <TextBlock Text="!"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Margin="0,-3,0,0"
-                           FontSize="38"
+                           Margin="0,-2,0,0"
+                           FontSize="22"
                            FontWeight="SemiBold"
                            Foreground="#0B5CEB" />
             </Border>
@@ -568,8 +573,9 @@ function Show-ToastNotice {
                        Grid.ColumnSpan="2"
                        VerticalAlignment="Center"
                        TextWrapping="Wrap"
-                       FontSize="26"
-                       LineHeight="36"
+                       TextTrimming="CharacterEllipsis"
+                       FontSize="14"
+                       LineHeight="20"
                        Foreground="#3F3F46" />
         </Grid>
     </Border>
@@ -611,6 +617,8 @@ if ((Test-SuppressWhenVSCodeFocused) -and (Test-VSCodeForeground)) {
 }
 
 $audioPath = Resolve-AudioPath
-Play-NoticeSound -Path $audioPath
+if ($null -ne $audioPath) {
+    Play-NoticeSound -Path $audioPath
+}
 Show-ToastNotice -Title $notice[0] -Message $notice[1]
 """

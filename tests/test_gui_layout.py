@@ -27,7 +27,20 @@ def test_gui_uses_light_stepper_layout_from_reference() -> None:
     assert "VS Code 前台静默（可选）" in source
     assert "当前状态" in source
     assert "配置预览" in source
-    assert "#F6FAFF" in source
+    assert "#F5F5F7" in source
+    assert "#007AFF" in source
+    assert "visual_effect" in source
+
+
+def test_gui_presents_audio_as_optional() -> None:
+    source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
+    selected_audio_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.selected_audio)
+
+    assert "提示音可选" in source
+    assert "未选择，将静音显示通知" in source
+    assert "Path | None" in selected_audio_source
+    assert "return None" in selected_audio_source
+    assert "raise ValueError" not in selected_audio_source
 
 
 def test_timeline_marker_draws_connector_lines_between_step_numbers() -> None:
