@@ -333,20 +333,21 @@ def test_generated_notify_script_uses_custom_card_toast_instead_of_balloon_tip(t
     assert "Get-RoundedRectanglePath" not in script
     assert "打开 VS Code" not in script
     assert "Open VS Code" not in script
-    assert 'Width="360"' in script
-    assert 'Height="120"' in script
-    assert '<ColumnDefinition Width="38" />' in script
-    assert 'Width="26"' in script
-    assert 'Width="24"' in script
+    assert 'Width="340"' in script
+    assert 'Height="92"' in script
+    assert '<ColumnDefinition Width="44" />' in script
+    assert 'Width="30"' in script
+    assert 'Width="22"' in script
     assert 'WindowStyle="None"' in script
     assert 'AllowsTransparency="True"' in script
-    assert 'CornerRadius="16"' in script
+    assert 'CornerRadius="18"' in script
     assert "DropShadowEffect" in script
     assert "TopMost = $true" in script
     assert 'VerticalAlignment="Center"' in script
     assert "closeButton" in script
     assert "#F8FBFF" in script
     assert "#111827" in script
+    assert "macOSNoticeCard" in script
     assert "Show-ToastNotice -Title $notice[0] -Message $notice[1]" in script
 
 

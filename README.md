@@ -6,17 +6,27 @@
 
 ## 文件
 
-- `agent_notify_configurator.py`：GUI 程序入口，负责布局编排、用户动作、loading 和消息框。
-- `agent_notify_ui_components.py`：GUI 视觉组件、图标、步骤卡片和状态行。
-- `agent_notify_core.py`：核心编排层，负责生成共享脚本、安装/取消 Hook、状态查询和测试通知。
-- `agent_notify_config.py`：路径、配置、JSON 读写和稳定常量。
-- `agent_notify_hooks.py`：Hook 命令生成、托管 Hook 合并、移除和状态检测。
-- `agent_notify_script.py`：共享 PowerShell 通知脚本模板。
-- `build_windows.py`：Windows 下用 PyInstaller 构建 EXE。
-- `requirements.txt`：运行、测试和打包依赖。
-- `tests/test_agent_notify_core.py`：核心行为测试。
-- `tests/test_gui_layout.py`：GUI 静态结构测试。
-- `dist/灵犀提醒.exe`：构建后的可双击 GUI 程序。
+```text
+ToolTip/
+|-- agent_notify_configurator.py    # GUI 程序入口、布局编排、用户动作
+|-- agent_notify_ui_components.py   # GUI 视觉组件、图标、设置区块
+|-- agent_notify_core.py            # 生成脚本、安装/取消 Hook、状态查询
+|-- agent_notify_config.py          # 路径、配置、JSON 读写和稳定常量
+|-- agent_notify_hooks.py           # Hook 命令生成、合并、移除和状态检测
+|-- agent_notify_script.py          # 共享 PowerShell 通知脚本模板
+|-- build_windows.py                # Windows 下用 PyInstaller 构建 EXE
+|-- requirements.txt                # 运行、测试和打包依赖
+|-- assets/
+|   |-- lingxi_icon.svg             # 应用图标源文件
+|   |-- lingxi_icon.ico             # Windows EXE/任务栏图标
+|-- tests/
+|   |-- test_agent_notify_core.py   # 核心行为测试
+|   |-- test_build_windows.py       # 构建命令测试
+|   |-- test_gui_layout.py          # GUI 静态结构测试
+|   |-- test_readme.py              # README 结构测试
+|-- dist/
+|   |-- 灵犀提醒.exe                # 构建后的可双击 GUI 程序
+```
 
 ## 使用 EXE
 

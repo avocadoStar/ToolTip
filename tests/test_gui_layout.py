@@ -6,11 +6,12 @@ import agent_notify_configurator
 import agent_notify_ui_components
 
 
-def test_status_panel_uses_scrollable_frame_for_overflow() -> None:
+def test_settings_panel_uses_scrollable_content_for_overflow() -> None:
     source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._build_main)
 
     assert "CTkScrollableFrame" in source
-    assert "self.steps_scroll" in source
+    assert "self.content_scroll" in source
+    assert "self.sidebar" in source
 
 
 def test_gui_title_uses_chinese_app_name_and_window_icon() -> None:
@@ -34,26 +35,31 @@ def test_gui_initializes_theme_before_window_creation_and_repaints_on_restore() 
     assert "self.after_idle(self._refresh_window_paint)" in module_source
 
 
-def test_gui_uses_light_stepper_layout_from_reference() -> None:
+def test_gui_uses_macos_settings_panel_layout() -> None:
     app_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
-    step_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._step_definitions)
+    module_source = inspect.getsource(agent_notify_configurator) + inspect.getsource(agent_notify_ui_components)
 
-    assert hasattr(agent_notify_ui_components, "StepCard")
+    assert hasattr(agent_notify_ui_components, "SidebarItem")
+    assert hasattr(agent_notify_ui_components, "SettingSection")
+    assert hasattr(agent_notify_ui_components, "ActionRow")
+    assert hasattr(agent_notify_ui_components, "PreviewBox")
     assert hasattr(agent_notify_ui_components, "StatusRow")
     assert hasattr(agent_notify_ui_components, "IconCanvas")
-    assert hasattr(agent_notify_ui_components, "TimelineMarker")
     assert agent_notify_ui_components.COLORS["bg"] == "#F5F5F7"
     assert agent_notify_ui_components.COLORS["blue"] == "#007AFF"
-    assert "visual_effect" in agent_notify_ui_components.COLORS
-    assert "选择提示音" in step_source
-    assert "生成共享通知脚本" in step_source
-    assert "安装 Hook 配置" in step_source
-    assert "测试通知" in step_source
-    assert "撤销（可选）" in step_source
+    assert "glass" in agent_notify_ui_components.COLORS
+    assert "选择提示音" in app_source
+    assert "生成共享通知脚本" in app_source
+    assert "安装 Hook 配置" in app_source
+    assert "测试通知" in app_source
+    assert "撤销配置" in app_source
     assert "VS Code 活跃时静默（可选）" in app_source
     assert "只有当前前台窗口是 VS Code 时，才不播放声音也不显示通知。" in app_source
     assert "当前状态" in app_source
     assert "配置预览" in app_source
+    assert "PreviewBox" in module_source
+    assert "preview_card" not in app_source
+    assert "preview_box.grid(row=1" not in app_source
 
 
 def test_gui_presents_audio_as_optional() -> None:
@@ -67,17 +73,14 @@ def test_gui_presents_audio_as_optional() -> None:
     assert "raise ValueError" not in selected_audio_source
 
 
-def test_timeline_marker_draws_connector_lines_between_step_numbers() -> None:
-    source = inspect.getsource(agent_notify_ui_components.TimelineMarker)
+def test_icon_canvas_uses_unified_line_icon_style() -> None:
+    source = inspect.getsource(agent_notify_ui_components.IconCanvas)
 
-    assert "show_top" in source
-    assert "show_bottom" in source
-    assert "top_line" in source
-    assert "bottom_line" in source
-    assert 'COLORS["line"]' in source
-    assert "CTkLabel" in source
-    assert "corner_radius" in source
-    assert "create_oval" not in source
+    assert "LINE_WIDTH" in source
+    assert "create_line" in source
+    assert "create_polygon" not in source
+    assert "create_arc" not in source
+    assert "visual_effect" not in source
 
 
 def test_run_action_shows_loading_dialog_and_preserves_exception_message() -> None:

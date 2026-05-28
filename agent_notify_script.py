@@ -153,8 +153,8 @@ function Show-ToastNotice {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="AI Hook 提示"
-        Width="360"
-        Height="120"
+        Width="340"
+        Height="92"
         WindowStyle="None"
         AllowsTransparency="True"
         ResizeMode="NoResize"
@@ -163,34 +163,36 @@ function Show-ToastNotice {
         FontFamily="Microsoft YaHei UI"
         SnapsToDevicePixels="True"
         UseLayoutRounding="True">
-    <Border Background="#F8FBFF"
+    <Border Name="macOSNoticeCard"
+            Background="#F8FBFF"
             BorderBrush="#D9E4F2"
             BorderThickness="1"
-            CornerRadius="16">
+            CornerRadius="18">
         <Border.Effect>
             <DropShadowEffect Color="#8AA3C2"
-                              BlurRadius="18"
-                              ShadowDepth="3"
-                              Opacity="0.22" />
+                              BlurRadius="20"
+                              ShadowDepth="4"
+                              Opacity="0.20" />
         </Border.Effect>
-        <Grid Margin="18,16,16,14">
+        <Grid Margin="16,13,14,13">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="44" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="26" />
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="36" />
+                <RowDefinition Height="25" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="38" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="32" />
-            </Grid.ColumnDefinitions>
 
             <Border Grid.Row="0"
+                    Grid.RowSpan="2"
                     Grid.Column="0"
-                    Width="26"
-                    Height="26"
+                    Width="30"
+                    Height="30"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
-                    CornerRadius="7">
+                    CornerRadius="9">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#2F8BFF" Offset="0" />
@@ -207,17 +209,17 @@ function Show-ToastNotice {
             <TextBlock Name="titleText"
                        Grid.Row="0"
                        Grid.Column="1"
-                       VerticalAlignment="Center"
+                       VerticalAlignment="Bottom"
                        TextTrimming="CharacterEllipsis"
-                       FontSize="17"
+                       FontSize="15"
                        FontWeight="SemiBold"
                        Foreground="#111827" />
 
             <Button Name="closeButton"
                     Grid.Row="0"
                     Grid.Column="2"
-                    Width="28"
-                    Height="28"
+                    Width="22"
+                    Height="22"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Top"
                     Content="×"
@@ -226,36 +228,19 @@ function Show-ToastNotice {
                     BorderBrush="Transparent"
                     BorderThickness="0"
                     Padding="0"
-                    FontSize="24"
+                    FontSize="18"
                     FontWeight="Light"
                     Foreground="#3F3F46" />
-
-            <Border Grid.Row="1"
-                    Grid.Column="0"
-                    Width="24"
-                    Height="24"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    CornerRadius="12"
-                    Background="#DDE9FF">
-                <TextBlock Text="!"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Margin="0,-1,0,0"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="#0B5CEB" />
-            </Border>
 
             <TextBlock Name="messageText"
                        Grid.Row="1"
                        Grid.Column="1"
                        Grid.ColumnSpan="2"
-                       VerticalAlignment="Center"
+                       VerticalAlignment="Top"
                        TextWrapping="Wrap"
                        TextTrimming="CharacterEllipsis"
-                       FontSize="13"
-                       LineHeight="18"
+                       FontSize="12"
+                       LineHeight="16"
                        Foreground="#3F3F46" />
         </Grid>
     </Border>
