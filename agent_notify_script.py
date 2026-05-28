@@ -41,7 +41,7 @@ function Get-NoticeText {
         'Codex:PermissionRequest' { return @('Codex 等待确认', '有权限或命令需要你处理。') }
         'Claude:Notification' { return @('Claude 等待输入', 'Claude Code 正在等待输入或确认。') }
         'Claude:Stop' { return @('Claude 已停止', '当前任务轮次已经结束。') }
-        default { return @("$Source 已停止", '请回到 VS Code 查看当前状态。') }
+        default { return @("$Source 已停止", '请查看当前任务状态。') }
     }
 }
 
@@ -268,16 +268,23 @@ function Show-ToastNotice {
     $window.ShowDialog() | Out-Null
 }
 
+Write-NotifyLog -Decision 'triggered' -Source $Source -Event $Event
 $notice = Get-NoticeText -Source $Source -Event $Event
 if (-not (Test-NotificationsEnabled)) {
     Write-NotifyLog -Decision 'skipped-disabled' -Source $Source -Event $Event
     return
 }
 
-$audioPath = Resolve-AudioPath
-if ($null -ne $audioPath) {
-    Play-NoticeSound -Path $audioPath
-}
 Show-ToastNotice -Title $notice[0] -Message $notice[1]
 Write-NotifyLog -Decision 'shown' -Source $Source -Event $Event
+
+try {
+    $audioPath = Resolve-AudioPath
+    if ($null -ne $audioPath) {
+        Play-NoticeSound -Path $audioPath
+    }
+}
+catch {
+    Write-NotifyLog -Decision 'audio-error' -Source $Source -Event $Event
+}
 """

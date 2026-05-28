@@ -48,6 +48,17 @@ dist\灵犀提醒.exe
 
 Codex 首次触发 Hook 时，可能还需要在 Codex 中通过 `/hooks` 信任该命令。
 
+## 通知排查
+
+通知只受总开关控制：开启通知时会尝试弹框，关闭通知时会跳过弹框和声音。脚本会在 `C:\Users\用户名\.agent-notify\notify.log` 记录诊断结果：
+
+- `triggered`：Hook 已经调用通知脚本。
+- `shown`：通知弹框已显示。
+- `skipped-disabled`：通知总开关关闭，因此跳过。
+- `audio-error`：提示音失败，但不会阻止弹框。
+
+如果 Claude 有日志而没有 Codex 日志，通常说明 Codex 没有读取或触发 `C:\Users\用户名\.codex\hooks.json` 中的 Hook，而不是通知脚本被静默拦截。此时优先检查 Codex 中 `/hooks` 的信任状态、当前 Windows 用户目录，以及实际启动 Codex 时使用的配置位置。
+
 ## 配置位置
 
 工具会读写以下位置：

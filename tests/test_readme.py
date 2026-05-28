@@ -17,3 +17,12 @@ def test_readme_files_section_uses_directory_tree() -> None:
     assert "|-- tests/" in files_section
     assert "|-- dist/" in files_section
     assert "|   |-- 灵犀提醒.exe" in files_section
+
+
+def test_readme_explains_notify_log_trigger_diagnostics() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8-sig")
+
+    assert "notify.log" in readme
+    assert "triggered" in readme
+    assert "skipped-disabled" in readme
+    assert "没有 Codex 日志" in readme

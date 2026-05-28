@@ -17,13 +17,8 @@ from agent_notify_config import (
     write_json,
 )
 from agent_notify_hooks import (
-    as_list,
-    build_hook_command,
     is_event_configured,
-    is_managed_command,
-    make_hook_group,
     remove_managed_hook,
-    remove_managed_hook_groups,
     set_managed_hook,
 )
 from agent_notify_script import get_notify_script_content
@@ -32,7 +27,6 @@ from agent_notify_script import get_notify_script_content
 def ensure_shared_script(
     audio_path: Path | None,
     paths: AgentNotifyPaths,
-    suppress_when_vscode_focused: bool = True,
     notifications_enabled: bool | None = None,
 ) -> None:
     paths.agent_notify_dir.mkdir(parents=True, exist_ok=True)
@@ -51,7 +45,6 @@ def ensure_shared_script(
     config = {
         "app": MANAGED_BY,
         "notifyScript": str(paths.notify_script_path),
-        "suppressWhenVSCodeFocused": bool(suppress_when_vscode_focused),
         "notificationsEnabled": bool(notifications_enabled),
         "updatedAt": datetime.now().astimezone().isoformat(),
     }
@@ -76,7 +69,6 @@ def ensure_shared_script(
 def install_hooks(
     audio_path: Path | None,
     paths: AgentNotifyPaths,
-    suppress_when_vscode_focused: bool = True,
     notifications_enabled: bool | None = None,
 ) -> None:
     codex_installed = paths.codex_hooks_path.parent.exists()
@@ -87,7 +79,6 @@ def install_hooks(
     ensure_shared_script(
         audio_path,
         paths,
-        suppress_when_vscode_focused=suppress_when_vscode_focused,
         notifications_enabled=notifications_enabled,
     )
 
@@ -137,6 +128,8 @@ def run_notice_test(paths: AgentNotifyPaths) -> None:
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
+            "-WindowStyle",
+            "Hidden",
             "-File",
             str(paths.notify_script_path),
             "-Source",
@@ -147,6 +140,7 @@ def run_notice_test(paths: AgentNotifyPaths) -> None:
             MANAGED_BY,
         ],
         check=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
     )
 
 
@@ -160,26 +154,6 @@ def load_saved_audio_path(paths: AgentNotifyPaths) -> str:
     if original and Path(original).exists():
         return original
     return ""
-
-
-def load_suppress_when_vscode_focused(paths: AgentNotifyPaths) -> bool:
-    try:
-        config = read_json(paths.config_path)
-    except Exception:
-        return True
-
-    value = config.get("suppressWhenVSCodeFocused", True)
-    if isinstance(value, bool):
-        return value
-    return True
-
-
-def save_suppress_when_vscode_focused(paths: AgentNotifyPaths, enabled: bool) -> None:
-    config = read_json(paths.config_path)
-    config.setdefault("app", MANAGED_BY)
-    config["suppressWhenVSCodeFocused"] = bool(enabled)
-    config["updatedAt"] = datetime.now().astimezone().isoformat()
-    write_json(paths.config_path, config)
 
 
 def load_notifications_enabled(paths: AgentNotifyPaths) -> bool:

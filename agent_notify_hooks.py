@@ -8,7 +8,7 @@ from agent_notify_config import MANAGED_BY, AgentNotifyPaths, read_json
 
 def build_hook_command(source: str, event: str, paths: AgentNotifyPaths) -> str:
     return (
-        'powershell.exe -NoProfile -ExecutionPolicy Bypass '
+        'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden '
         f'-File "{paths.notify_script_path}" '
         f'-Source "{source}" -Event "{event}" -ManagedBy "{MANAGED_BY}"'
     )

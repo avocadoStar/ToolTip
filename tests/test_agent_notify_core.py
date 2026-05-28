@@ -11,12 +11,10 @@ from agent_notify_core import (
     ensure_shared_script,
     install_hooks,
     load_notifications_enabled,
-    load_suppress_when_vscode_focused,
     save_notifications_enabled,
-    save_suppress_when_vscode_focused,
     uninstall_hooks,
 )
-from agent_notify_hooks import is_event_configured, remove_managed_hook, set_managed_hook
+from agent_notify_hooks import build_hook_command, is_event_configured, remove_managed_hook, set_managed_hook
 
 
 def test_install_preserves_existing_claude_settings_and_adds_managed_hooks(tmp_path: Path) -> None:
@@ -107,7 +105,7 @@ def test_ensure_shared_script_accepts_mp3_audio(tmp_path: Path) -> None:
     config = json.loads(paths.config_path.read_text(encoding="utf-8"))
     assert paths.managed_audio_path(".mp3").exists()
     assert config["managedAudio"].endswith("completed.mp3")
-    assert config["suppressWhenVSCodeFocused"] is True
+    assert "suppressWhenVSCodeFocused" not in config
     assert config["notificationsEnabled"] is True
 
 
@@ -120,7 +118,7 @@ def test_ensure_shared_script_allows_no_audio(tmp_path: Path) -> None:
     assert paths.notify_script_path.exists()
     assert "managedAudio" not in config
     assert "originalAudio" not in config
-    assert config["suppressWhenVSCodeFocused"] is True
+    assert "suppressWhenVSCodeFocused" not in config
     assert config["notificationsEnabled"] is True
     assert not paths.managed_audio_path(".wav").exists()
     assert not paths.managed_audio_path(".mp3").exists()
@@ -141,15 +139,21 @@ def test_ensure_shared_script_without_audio_removes_old_managed_audio(tmp_path: 
     assert not paths.managed_audio_path(".wav").exists()
 
 
-def test_ensure_shared_script_can_disable_vscode_foreground_suppression(tmp_path: Path) -> None:
+def test_ensure_shared_script_ignores_legacy_vscode_foreground_suppression_field(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     audio = tmp_path / "source.wav"
     audio.write_bytes(b"RIFF....WAVEfmt ")
+    paths.config_path.parent.mkdir(parents=True)
+    paths.config_path.write_text(
+        json.dumps({"suppressWhenVSCodeFocused": False, "notificationsEnabled": True}),
+        encoding="utf-8",
+    )
 
-    ensure_shared_script(audio, paths, suppress_when_vscode_focused=False)
+    ensure_shared_script(audio, paths)
 
     config = json.loads(paths.config_path.read_text(encoding="utf-8"))
-    assert config["suppressWhenVSCodeFocused"] is False
+    assert "suppressWhenVSCodeFocused" not in config
+    assert config["notificationsEnabled"] is True
 
 
 def test_install_hooks_allows_no_audio(tmp_path: Path) -> None:
@@ -165,16 +169,16 @@ def test_install_hooks_allows_no_audio(tmp_path: Path) -> None:
     assert is_event_configured(paths.codex_hooks_path, "PermissionRequest", paths)
 
 
-def test_install_hooks_persists_vscode_foreground_suppression_choice(tmp_path: Path) -> None:
+def test_install_hooks_does_not_write_vscode_foreground_suppression_choice(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     audio = tmp_path / "source.wav"
     audio.write_bytes(b"RIFF....WAVEfmt ")
     paths.codex_hooks_path.parent.mkdir(parents=True)
 
-    install_hooks(audio, paths, suppress_when_vscode_focused=False)
+    install_hooks(audio, paths)
 
     config = json.loads(paths.config_path.read_text(encoding="utf-8"))
-    assert config["suppressWhenVSCodeFocused"] is False
+    assert "suppressWhenVSCodeFocused" not in config
 
 
 def test_install_hooks_persists_notifications_enabled_choice(tmp_path: Path) -> None:
@@ -228,31 +232,6 @@ def test_install_hooks_fails_without_installed_agent(tmp_path: Path) -> None:
     assert not paths.claude_settings_path.exists()
 
 
-def test_load_suppress_when_vscode_focused_defaults_to_enabled(tmp_path: Path) -> None:
-    paths = make_paths(tmp_path)
-
-    assert load_suppress_when_vscode_focused(paths) is True
-
-    paths.config_path.parent.mkdir(parents=True)
-    paths.config_path.write_text("{not json", encoding="utf-8")
-    assert load_suppress_when_vscode_focused(paths) is True
-
-
-def test_save_suppress_when_vscode_focused_preserves_existing_config(tmp_path: Path) -> None:
-    paths = make_paths(tmp_path)
-    paths.config_path.parent.mkdir(parents=True)
-    paths.config_path.write_text(
-        json.dumps({"originalAudio": "sound.wav", "suppressWhenVSCodeFocused": True}),
-        encoding="utf-8",
-    )
-
-    save_suppress_when_vscode_focused(paths, False)
-
-    config = json.loads(paths.config_path.read_text(encoding="utf-8"))
-    assert config["originalAudio"] == "sound.wav"
-    assert config["suppressWhenVSCodeFocused"] is False
-
-
 def test_load_notifications_enabled_defaults_to_enabled(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
 
@@ -283,6 +262,14 @@ def test_save_notifications_enabled_preserves_existing_config(tmp_path: Path) ->
     assert config["originalAudio"] == "sound.wav"
     assert config["suppressWhenVSCodeFocused"] is False
     assert config["notificationsEnabled"] is False
+
+
+def test_save_notifications_enabled_defaults_non_boolean_values_to_enabled(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    paths.config_path.parent.mkdir(parents=True)
+    paths.config_path.write_text(json.dumps({"notificationsEnabled": "false"}), encoding="utf-8")
+
+    assert load_notifications_enabled(paths) is True
 
 
 def test_ensure_shared_script_rejects_unsupported_audio(tmp_path: Path) -> None:
@@ -354,11 +341,14 @@ def test_generated_notify_script_reads_runtime_notification_switch(tmp_path: Pat
     assert "function Test-NotificationsEnabled" in script
     assert "function Write-NotifyLog" in script
     assert "notificationsEnabled" in script
+    assert "triggered" in script
     assert "skipped-disabled" in script
     assert "shown" in script
+    assert "audio-error" in script
     assert "Test-VSCodeForeground" not in script
     assert "GetForegroundWindow" not in script
-    assert "return" in script
+    assert "suppressWhenVSCodeFocused" not in script
+    assert "请查看当前任务状态。" in script
 
 
 def test_generated_notify_script_uses_custom_card_toast_instead_of_balloon_tip(tmp_path: Path) -> None:
@@ -398,6 +388,22 @@ def test_generated_notify_script_uses_custom_card_toast_instead_of_balloon_tip(t
     assert "Show-ToastNotice -Title $notice[0] -Message $notice[1]" in script
 
 
+def test_generated_notify_script_shows_toast_before_playing_optional_audio(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    audio = tmp_path / "source.wav"
+    audio.write_bytes(b"RIFF....WAVEfmt ")
+
+    ensure_shared_script(audio, paths)
+
+    script = paths.notify_script_path.read_text(encoding="utf-8-sig")
+    assert script.index("Write-NotifyLog -Decision 'triggered'") < script.index("if (-not (Test-NotificationsEnabled))")
+    assert script.index("Show-ToastNotice -Title $notice[0] -Message $notice[1]") < script.index(
+        "Play-NoticeSound -Path $audioPath"
+    )
+    assert "try {" in script
+    assert "Write-NotifyLog -Decision 'audio-error'" in script
+
+
 def test_generated_notify_script_skips_sound_when_audio_is_not_configured(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
 
@@ -409,6 +415,20 @@ def test_generated_notify_script_skips_sound_when_audio_is_not_configured(tmp_pa
     assert "$audioPath = Resolve-AudioPath" in script
     assert "if ($null -ne $audioPath)" in script
     assert "Play-NoticeSound -Path $audioPath" in script
+
+
+def test_hook_command_and_notice_test_hide_powershell_console(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    command = build_hook_command("Codex", "Stop", paths)
+
+    assert "-WindowStyle Hidden" in command
+
+    import agent_notify_core
+
+    source = Path(agent_notify_core.__file__).read_text(encoding="utf-8")
+    assert '"-WindowStyle"' in source
+    assert '"Hidden"' in source
+    assert "creationflags=subprocess.CREATE_NO_WINDOW" in source
 
 
 def make_paths(root: Path) -> AgentNotifyPaths:
