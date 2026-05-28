@@ -49,6 +49,7 @@ class AgentNotifyApp(ctk.CTk):
         self.notice_tested = False
         self.loading_popup: ctk.CTkToplevel | None = None
         self.loading_started_at = 0.0
+        self.action_running = False
 
         self.title(APP_TITLE)
         self.geometry("1180x760")
@@ -154,8 +155,8 @@ class AgentNotifyApp(ctk.CTk):
         ).grid(row=5, column=0, padx=(0, 18), pady=(0, 0), sticky="n")
         StepCard(
             self.steps_scroll,
-            title="VS Code 前台静默（可选）",
-            description="当 VS Code 位于前台时，不播放声音也不显示通知。",
+            title="VS Code 活跃时静默（可选）",
+            description="只有当前前台窗口是 VS Code 时，才不播放声音也不显示通知。",
             icon="monitor",
             icon_color=COLORS["cyan"],
             icon_bg=COLORS["cyan_light"],
@@ -366,7 +367,7 @@ class AgentNotifyApp(ctk.CTk):
     def save_suppression_preference(self) -> None:
         save_suppress_when_vscode_focused(self.paths, self.suppress_when_vscode_focused())
         self.suppress_status_var.set("已开启" if self.suppress_when_vscode_focused() else "已关闭")
-        self.status_var.set("VS Code 前台静默设置已保存。")
+        self.status_var.set("VS Code 活跃时静默设置已保存；离开 VS Code 后通知会正常显示。")
 
     def generate_script(self) -> None:
         ensure_shared_script(
@@ -458,6 +459,9 @@ class AgentNotifyApp(ctk.CTk):
         self.after(delay_ms, callback)
 
     def run_action(self, working: str, action, success: str) -> None:
+        if self.action_running:
+            return
+        self.action_running = True
         self.status_var.set(working)
         self.show_loading_popup(working)
         self.configure(cursor="watch")
@@ -475,6 +479,7 @@ class AgentNotifyApp(ctk.CTk):
         threading.Thread(target=worker, daemon=True).start()
 
     def show_success(self, message: str) -> None:
+        self.action_running = False
         self.close_loading_popup()
         self.configure(cursor="")
         self.status_var.set(message)
@@ -482,6 +487,7 @@ class AgentNotifyApp(ctk.CTk):
         messagebox.showinfo(APP_TITLE, message)
 
     def show_error(self, message: str) -> None:
+        self.action_running = False
         self.close_loading_popup()
         self.configure(cursor="")
         self.status_var.set(message)
@@ -495,7 +501,7 @@ class AgentNotifyApp(ctk.CTk):
         self._update_status_rows(status, audio_selected, hook_ready)
 
         if self.status_var.get() in {"就绪。", "状态已刷新。"}:
-            self.status_var.set("提示：提示音可选；未选择时，当 Codex 或 Claude Code 需要您操作会静音显示右下角通知。")
+            self.status_var.set("提示：提示音可选；离开 VS Code 后，Codex 或 Claude Code 需要您操作时会正常显示右下角通知。")
 
     def _update_status_rows(self, status: dict, audio_selected: bool, hook_ready: bool) -> None:
         self.audio_status_var.set("已选择文件" if audio_selected else "未选择，将静音显示通知")

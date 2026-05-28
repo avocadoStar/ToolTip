@@ -41,7 +41,8 @@ def test_gui_uses_light_stepper_layout_from_reference() -> None:
     assert "安装 Hook 配置" in step_source
     assert "测试通知" in step_source
     assert "撤销（可选）" in step_source
-    assert "VS Code 前台静默（可选）" in app_source
+    assert "VS Code 活跃时静默（可选）" in app_source
+    assert "只有当前前台窗口是 VS Code 时，才不播放声音也不显示通知。" in app_source
     assert "当前状态" in app_source
     assert "配置预览" in app_source
 
@@ -73,11 +74,18 @@ def test_timeline_marker_draws_connector_lines_between_step_numbers() -> None:
 def test_run_action_shows_loading_dialog_and_preserves_exception_message() -> None:
     source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
     run_action_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.run_action)
+    show_success_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.show_success)
+    show_error_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.show_error)
 
     assert "def show_loading_popup" in source
     assert "def close_loading_popup" in source
     assert "CTkToplevel" in source
     assert "CTkProgressBar" in source
+    assert "self.action_running = False" in show_success_source
+    assert "self.action_running = False" in show_error_source
+    assert "if self.action_running:" in run_action_source
+    assert "return" in run_action_source
+    assert "self.action_running = True" in run_action_source
     assert "self.show_loading_popup(working)" in run_action_source
     assert "message = str(exc)" in run_action_source
     assert "lambda message=message" in run_action_source
