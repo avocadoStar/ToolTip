@@ -495,22 +495,22 @@ function Show-ToastNotice {
         </Border.Effect>
         <Grid Margin="18,16,16,14">
             <Grid.RowDefinitions>
-                <RowDefinition Height="44" />
+                <RowDefinition Height="36" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="46" />
+                <ColumnDefinition Width="38" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="32" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Row="0"
                     Grid.Column="0"
-                    Width="34"
-                    Height="34"
+                    Width="26"
+                    Height="26"
                     HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    CornerRadius="9">
+                    VerticalAlignment="Center"
+                    CornerRadius="7">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#2F8BFF" Offset="0" />
@@ -518,18 +518,18 @@ function Show-ToastNotice {
                     </LinearGradientBrush>
                 </Border.Background>
                 <Grid>
-                    <Ellipse Width="20" Height="20" Fill="#FFFFFF" Opacity="0.96" />
-                    <Ellipse Width="10" Height="10" Fill="#1368FF" HorizontalAlignment="Right" Margin="0,0,5,0" />
-                    <Ellipse Width="7" Height="7" Fill="#BBD7FF" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                    <Ellipse Width="16" Height="16" Fill="#FFFFFF" Opacity="0.96" />
+                    <Ellipse Width="8" Height="8" Fill="#1368FF" HorizontalAlignment="Right" Margin="0,0,4,0" />
+                    <Ellipse Width="5" Height="5" Fill="#BBD7FF" HorizontalAlignment="Left" Margin="8,0,0,0" />
                 </Grid>
             </Border>
 
             <TextBlock Name="titleText"
                        Grid.Row="0"
                        Grid.Column="1"
-                       VerticalAlignment="Top"
+                       VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       FontSize="18"
+                       FontSize="17"
                        FontWeight="SemiBold"
                        Foreground="#111827" />
 
@@ -552,17 +552,17 @@ function Show-ToastNotice {
 
             <Border Grid.Row="1"
                     Grid.Column="0"
-                    Width="34"
-                    Height="34"
+                    Width="24"
+                    Height="24"
                     HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    CornerRadius="17"
+                    VerticalAlignment="Center"
+                    CornerRadius="12"
                     Background="#DDE9FF">
                 <TextBlock Text="!"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Margin="0,-2,0,0"
-                           FontSize="22"
+                           Margin="0,-1,0,0"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="#0B5CEB" />
             </Border>
@@ -574,8 +574,8 @@ function Show-ToastNotice {
                        VerticalAlignment="Center"
                        TextWrapping="Wrap"
                        TextTrimming="CharacterEllipsis"
-                       FontSize="14"
-                       LineHeight="20"
+                       FontSize="13"
+                       LineHeight="18"
                        Foreground="#3F3F46" />
         </Grid>
     </Border>
