@@ -86,13 +86,13 @@
 **注意事项**：`agent_notify_hooks.py` 只从 `agent_notify_config.py` 导入，禁止导入 core。
 
 **TODO**
-- [ ] 创建 `agent_notify_hooks.py`。
-- [ ] 移入 `build_hook_command()`、`is_managed_command()`、`make_hook_group()`、`remove_managed_hook_groups()`。
-- [ ] 移入 `set_managed_hook()`、`remove_managed_hook()`、`is_event_configured()`、`as_list()`。
-- [ ] `agent_notify_core.py` 从 hooks 模块导入这些函数。
-- [ ] 全仓搜索残留引用：`rg "set_managed_hook|build_hook_command|is_event_configured"`。
-- [ ] 运行 `python -m pytest tests/test_agent_notify_core.py -q`。
-- [ ] 提交：`refactor: isolate hook configuration logic`
+- [x] 创建 `agent_notify_hooks.py`。
+- [x] 移入 `build_hook_command()`、`is_managed_command()`、`make_hook_group()`、`remove_managed_hook_groups()`。
+- [x] 移入 `set_managed_hook()`、`remove_managed_hook()`、`is_event_configured()`、`as_list()`。
+- [x] `agent_notify_core.py` 从 hooks 模块导入这些函数。
+- [x] 全仓搜索残留引用：`rg "set_managed_hook|build_hook_command|is_event_configured"`。
+- [x] 运行 `python -m pytest tests/test_agent_notify_core.py -q`。
+- [x] 提交：`refactor: isolate hook configuration logic`
 
 ### 第四阶段：抽出通知脚本模板
 
@@ -178,7 +178,7 @@
 
 - [x] 阶段一：写入 `plan.md` 并确认基线
 - [x] 阶段二：抽出 `agent_notify_config.py`
-- [ ] 阶段三：抽出 `agent_notify_hooks.py`
+- [x] 阶段三：抽出 `agent_notify_hooks.py`
 - [ ] 阶段四：抽出 `agent_notify_script.py`
 - [ ] 阶段五：抽出 `agent_notify_ui_components.py`
 - [ ] 阶段六：清理 `AgentNotifyApp` 内部编排
