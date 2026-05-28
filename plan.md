@@ -71,12 +71,12 @@
 **注意事项**：不要把一次性字符串都提成常量；只迁移已有稳定概念。
 
 **TODO**
-- [ ] 创建 `agent_notify_config.py`。
-- [ ] 从 `agent_notify_core.py` 移入 `AgentNotifyPaths`、`default_paths()`、`read_json()`、`write_json()`、`backup_json()`。
-- [ ] 移入 `MANAGED_BY`、`SUPPORTED_AUDIO_SUFFIXES`。
-- [ ] 在 `agent_notify_core.py` 中导入这些名称，保持旧模块仍可 `from agent_notify_core import AgentNotifyPaths`。
-- [ ] 运行 `python -m pytest tests/test_agent_notify_core.py -q`。
-- [ ] 提交：`refactor: extract config and path helpers`
+- [x] 创建 `agent_notify_config.py`。
+- [x] 从 `agent_notify_core.py` 移入 `AgentNotifyPaths`、`default_paths()`、`read_json()`、`write_json()`、`backup_json()`。
+- [x] 移入 `MANAGED_BY`、`SUPPORTED_AUDIO_SUFFIXES`。
+- [x] 在 `agent_notify_core.py` 中导入这些名称，保持旧模块仍可 `from agent_notify_core import AgentNotifyPaths`。
+- [x] 运行 `python -m pytest tests/test_agent_notify_core.py -q`。
+- [x] 提交：`refactor: extract config and path helpers`
 
 ### 第三阶段：抽出 Hook 逻辑
 
@@ -177,7 +177,7 @@
 ## 阶段总 TODOList
 
 - [x] 阶段一：写入 `plan.md` 并确认基线
-- [ ] 阶段二：抽出 `agent_notify_config.py`
+- [x] 阶段二：抽出 `agent_notify_config.py`
 - [ ] 阶段三：抽出 `agent_notify_hooks.py`
 - [ ] 阶段四：抽出 `agent_notify_script.py`
 - [ ] 阶段五：抽出 `agent_notify_ui_components.py`
