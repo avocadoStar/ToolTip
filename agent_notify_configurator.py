@@ -29,6 +29,7 @@ from agent_notify_core import (
 )
 from agent_notify_ui_components import (
     COLORS,
+    CONTENT_MAX_WIDTH,
     FONT,
     IconCanvas,
     SIDEBAR_WIDTH,
@@ -114,6 +115,8 @@ class AgentNotifyApp(ctk.CTk):
             self.main_frame.configure(fg_color=COLORS["bg"])
         if hasattr(self, "content_scroll"):
             self.content_scroll.configure(fg_color=COLORS["bg"])
+        if hasattr(self, "content_panel"):
+            self.content_panel.configure(fg_color=COLORS["bg"])
 
     def _show_initial_window(self) -> None:
         self._apply_window_background()
@@ -154,8 +157,17 @@ class AgentNotifyApp(ctk.CTk):
             scrollbar_button_hover_color=COLORS["scrollbar_hover"],
         )
         self.content_scroll.grid(row=0, column=1, sticky="nsew")
-        self.content_scroll.grid_columnconfigure(0, weight=1, minsize=640)
+        self.content_scroll.grid_columnconfigure(0, weight=0, minsize=CONTENT_MAX_WIDTH)
         self.content_scroll.grid_columnconfigure(1, weight=1)
+
+        self.content_panel = ctk.CTkFrame(
+            self.content_scroll,
+            fg_color=COLORS["bg"],
+            width=CONTENT_MAX_WIDTH,
+            corner_radius=0,
+        )
+        self.content_panel.grid(row=0, column=0, sticky="new")
+        self.content_panel.grid_columnconfigure(0, weight=1)
 
     def _build_sidebar(self) -> None:
         brand = ctk.CTkFrame(self.sidebar, fg_color="transparent")
@@ -210,26 +222,26 @@ class AgentNotifyApp(ctk.CTk):
         self._schedule_repaint()
 
     def _clear_content(self) -> None:
-        for child in self.content_scroll.winfo_children():
+        for child in self.content_panel.winfo_children():
             child.destroy()
 
     def _build_page_header(self, title: str) -> None:
         ctk.CTkLabel(
-            self.content_scroll,
+            self.content_panel,
             text=title,
-            font=(FONT, 28, "bold"),
+            font=(FONT, 22),
             text_color=COLORS["text"],
             anchor="w",
-        ).grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 18))
+        ).grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 14))
 
-    def _place_list(self, title: str) -> SettingsList:
-        settings_list = SettingsList(self.content_scroll, title)
-        settings_list.grid(row=1, column=0, sticky="ew", padx=2, pady=(0, 16))
+    def _place_list(self) -> SettingsList:
+        settings_list = SettingsList(self.content_panel)
+        settings_list.grid(row=1, column=0, sticky="ew", padx=2, pady=(0, 12))
         return settings_list
 
     def _build_notifications_page(self) -> None:
         self._build_page_header("通知")
-        settings_list = self._place_list("通知")
+        settings_list = self._place_list()
         SettingRow(settings_list.list, "状态", status_var=self.notification_status_var).grid(row=0, column=0, sticky="ew")
         SettingRow(
             settings_list.list,
@@ -249,7 +261,7 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_connection_page(self) -> None:
         self._build_page_header("连接")
-        settings_list = self._place_list("连接")
+        settings_list = self._place_list()
         SettingRow(settings_list.list, "Codex", status_var=self.codex_status_var).grid(row=0, column=0, sticky="ew")
         SettingRow(settings_list.list, "Claude Code", status_var=self.claude_status_var).grid(row=1, column=0, sticky="ew")
         SettingRow(
@@ -267,7 +279,7 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_audio_page(self) -> None:
         self._build_page_header("提示音")
-        settings_list = self._place_list("提示音")
+        settings_list = self._place_list()
         SettingRow(settings_list.list, "状态", status_var=self.audio_status_var).grid(row=0, column=0, sticky="ew")
         SettingRow(
             settings_list.list,
@@ -278,7 +290,7 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_more_page(self) -> None:
         self._build_page_header("更多")
-        settings_list = self._place_list("更多")
+        settings_list = self._place_list()
         SettingRow(
             settings_list.list,
             "测试通知",
@@ -324,18 +336,15 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_footer(self) -> None:
         footer = ctk.CTkFrame(self, fg_color=COLORS["bg"], corner_radius=0)
-        footer.grid(row=1, column=0, sticky="ew", padx=34, pady=(0, 18))
-        footer.grid_columnconfigure(1, weight=1)
-        ctk.CTkLabel(footer, text="●", font=(FONT, 11), text_color=COLORS["green"]).grid(
-            row=0, column=0, padx=(0, 10)
-        )
+        footer.grid(row=1, column=0, sticky="ew", padx=34, pady=(0, 16))
+        footer.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(
             footer,
             textvariable=self.status_var,
-            font=(FONT, 12),
-            text_color=COLORS["muted"],
+            font=(FONT, 11),
+            text_color=COLORS["muted_light"],
             anchor="w",
-        ).grid(row=0, column=1, sticky="ew")
+        ).grid(row=0, column=0, sticky="ew")
 
     def _init_tray(self) -> None:
         if pystray is None or Image is None:

@@ -8,20 +8,25 @@ import customtkinter as ctk
 FONT = "Segoe UI Variable"
 LINE_WIDTH = 2
 SIDEBAR_WIDTH = 220
-ROW_HEIGHT = 46
-NAV_ROW_HEIGHT = 38
-BUTTON_HEIGHT = 32
+CONTENT_MAX_WIDTH = 760
+ROW_HEIGHT = 40
+NAV_ROW_HEIGHT = 34
+BUTTON_HEIGHT = 30
 
 COLORS = {
     "bg": "#F5F5F7",
     "sidebar": "#F5F5F7",
     "list": "#FFFFFF",
-    "row_hover": "#F2F2F4",
+    "row_hover": "#ECECEF",
+    "nav_selected": "#E8E8ED",
     "border": "#E5E5EA",
+    "button_border_subtle": "#F0F0F2",
     "divider": "#ECECEF",
     "text": "#1D1D1F",
     "muted": "#6E6E73",
     "muted_light": "#A1A1A6",
+    "nav_icon": "#9A9AA0",
+    "nav_icon_selected": "#6E6E73",
     "blue": "#0071E3",
     "blue_hover": "#0066CC",
     "blue_soft": "#EAF3FF",
@@ -55,10 +60,15 @@ class IconCanvas(ctk.CTkFrame):
             highlightthickness=0,
         )
         self.canvas.place(relx=0.5, rely=0.5, anchor="center")
+        self.icon = icon
         self._draw_icon(icon, color)
 
     def set_background(self, color: str) -> None:
         self.canvas.configure(bg=color)
+
+    def set_color(self, color: str) -> None:
+        self.canvas.delete("all")
+        self._draw_icon(self.icon, color)
 
     def _line(self, *points: int, color: str) -> None:
         self.canvas.create_line(*points, fill=color, width=LINE_WIDTH, capstyle="round", joinstyle="round")
@@ -97,17 +107,16 @@ class SidebarItem(ctk.CTkFrame):
         )
         self.grid_propagate(False)
         self.grid_columnconfigure(1, weight=1)
-        color = self._text_color()
-        self.icon = IconCanvas(self, icon, color, size=26, bg_color=self._background())
-        self.icon.grid(row=0, column=0, padx=(10, 8), pady=5)
+        self.icon_view = IconCanvas(self, icon, self._icon_color(), size=24, bg_color=self._background())
+        self.icon_view.grid(row=0, column=0, padx=(9, 8), pady=4)
         self.label = ctk.CTkLabel(
             self,
             text=title,
-            font=(FONT, 13),
-            text_color=color,
+            font=(FONT, 12),
+            text_color=self._text_color(),
             anchor="w",
         )
-        self.label.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=5)
+        self.label.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=4)
         self._bind_pointer_events(self)
 
     def _bind_pointer_events(self, widget) -> None:
@@ -118,10 +127,13 @@ class SidebarItem(ctk.CTkFrame):
             self._bind_pointer_events(child)
 
     def _background(self) -> str:
-        return COLORS["row_hover"] if self.selected else COLORS["sidebar"]
+        return COLORS["nav_selected"] if self.selected else COLORS["sidebar"]
 
     def _text_color(self) -> str:
         return COLORS["text"] if self.selected else COLORS["muted"]
+
+    def _icon_color(self) -> str:
+        return COLORS["nav_icon_selected"] if self.selected else COLORS["nav_icon"]
 
     def set_selected(self, selected: bool) -> None:
         self.selected = selected
@@ -130,7 +142,8 @@ class SidebarItem(ctk.CTkFrame):
     def _apply_state(self, bg_color: str) -> None:
         text_color = self._text_color()
         self.configure(fg_color=bg_color)
-        self.icon.set_background(bg_color)
+        self.icon_view.set_background(bg_color)
+        self.icon_view.set_color(self._icon_color())
         self.label.configure(text_color=text_color)
 
     def _on_enter(self, _event=None) -> None:
@@ -145,24 +158,17 @@ class SidebarItem(ctk.CTkFrame):
 
 
 class SettingsList(ctk.CTkFrame):
-    def __init__(self, master, title: str) -> None:
+    def __init__(self, master, title: str | None = None) -> None:
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(
-            self,
-            text=title,
-            font=(FONT, 18, "bold"),
-            text_color=COLORS["text"],
-            anchor="w",
-        ).grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 8))
         self.list = ctk.CTkFrame(
             self,
             fg_color=COLORS["list"],
-            border_color=COLORS["border"],
-            border_width=1,
-            corner_radius=14,
+            border_color=COLORS["button_border_subtle"],
+            border_width=0,
+            corner_radius=12,
         )
-        self.list.grid(row=1, column=0, sticky="ew")
+        self.list.grid(row=0, column=0, sticky="ew")
         self.list.grid_columnconfigure(0, weight=1)
 
 
@@ -184,27 +190,27 @@ class SettingRow(ctk.CTkFrame):
         ctk.CTkLabel(
             self,
             text=title,
-            font=(FONT, 14),
+            font=(FONT, 13),
             text_color=COLORS["text"],
             anchor="w",
-        ).grid(row=0, column=0, sticky="w", padx=(16, 12), pady=10)
+        ).grid(row=0, column=0, sticky="w", padx=(14, 12), pady=7)
 
         control = control_factory(self) if control_factory is not None else None
         if control is not None:
-            control.grid(row=0, column=1, sticky="e", padx=(12, 16), pady=7)
+            control.grid(row=0, column=1, sticky="e", padx=(12, 14), pady=5)
         elif status_var is not None:
-            StatusPill(self, status_var).grid(row=0, column=1, sticky="e", padx=(12, 16), pady=7)
+            StatusPill(self, status_var).grid(row=0, column=1, sticky="e", padx=(12, 14), pady=5)
 
         if not is_last:
             ctk.CTkFrame(self, fg_color=COLORS["divider"], height=1).grid(
-                row=1, column=0, columnspan=2, sticky="ew", padx=(16, 0)
+                row=1, column=0, columnspan=2, sticky="ew", padx=(14, 0)
             )
 
 
 class StatusPill(ctk.CTkFrame):
     def __init__(self, master, text_var: ctk.StringVar, color: str = COLORS["muted_light"]) -> None:
         super().__init__(master, fg_color="transparent")
-        ctk.CTkLabel(self, text="●", font=(FONT, 10), text_color=color, width=12).grid(
+        ctk.CTkLabel(self, text="●", font=(FONT, 8), text_color=color, width=10).grid(
             row=0, column=0, padx=(0, 5)
         )
         ctk.CTkLabel(
@@ -231,15 +237,15 @@ class SubtleButton(ctk.CTkButton):
             border_width = 0
             text_color = "#FFFFFF"
         elif danger:
-            fg_color = COLORS["red_soft"]
-            hover_color = "#FFE5E2"
+            fg_color = "transparent"
+            hover_color = COLORS["row_hover"]
             border_width = 0
             text_color = COLORS["red"]
         else:
             fg_color = "#FFFFFF"
             hover_color = COLORS["row_hover"]
             border_width = 1
-            text_color = COLORS["text"]
+            text_color = COLORS["muted"]
 
         super().__init__(
             master,
@@ -250,8 +256,8 @@ class SubtleButton(ctk.CTkButton):
             fg_color=fg_color,
             hover_color=hover_color,
             border_width=border_width,
-            border_color=COLORS["border"],
+            border_color=COLORS["button_border_subtle"],
             text_color=text_color,
-            font=(FONT, 13),
-            corner_radius=10,
+            font=(FONT, 12),
+            corner_radius=8,
         )

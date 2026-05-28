@@ -11,7 +11,9 @@ def test_settings_panel_uses_scrollable_content_for_overflow() -> None:
 
     assert "CTkScrollableFrame" in source
     assert "self.content_scroll" in source
+    assert "self.content_panel" in source
     assert "self.sidebar" in source
+    assert "CONTENT_MAX_WIDTH" in source
 
 
 def test_gui_title_uses_chinese_app_name_and_window_icon() -> None:
@@ -81,7 +83,7 @@ def test_gui_renders_only_the_selected_page_by_default() -> None:
     assert "self.current_page = ctk.StringVar(value=\"notifications\")" in init_source
     assert "self.show_page(self.current_page.get())" in finish_source
     assert "builders[page_id]()" in show_page_source
-    assert "for child in self.content_scroll.winfo_children()" in clear_source
+    assert "for child in self.content_panel.winfo_children()" in clear_source
     assert "_build_notifications_group" not in init_source + finish_source + show_page_source
     assert "_build_connection_group" not in init_source + finish_source + show_page_source
     assert "_build_audio_group" not in init_source + finish_source + show_page_source
@@ -91,13 +93,26 @@ def test_gui_renders_only_the_selected_page_by_default() -> None:
 def test_gui_uses_compact_continuous_settings_metrics() -> None:
     component_source = inspect.getsource(agent_notify_ui_components)
     main_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._build_main)
+    header_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._build_page_header)
+    footer_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._build_footer)
+    settings_list_source = inspect.getsource(agent_notify_ui_components.SettingsList)
+    button_source = inspect.getsource(agent_notify_ui_components.SubtleButton)
 
     assert agent_notify_ui_components.SIDEBAR_WIDTH == 220
-    assert agent_notify_ui_components.ROW_HEIGHT == 46
-    assert agent_notify_ui_components.BUTTON_HEIGHT == 32
+    assert agent_notify_ui_components.CONTENT_MAX_WIDTH == 760
+    assert agent_notify_ui_components.ROW_HEIGHT == 40
+    assert agent_notify_ui_components.NAV_ROW_HEIGHT == 34
+    assert agent_notify_ui_components.BUTTON_HEIGHT == 30
     assert "SIDEBAR_WIDTH" in main_source
+    assert "CONTENT_MAX_WIDTH" in main_source
     assert "height=ROW_HEIGHT" in component_source
     assert "height=BUTTON_HEIGHT" in component_source
+    assert "font=(FONT, 28, \"bold\")" not in header_source
+    assert "font=(FONT, 22)" in header_source
+    assert "CTkLabel" not in settings_list_source
+    assert "red_soft" not in button_source
+    assert "COLORS[\"green\"]" not in footer_source
+    assert "text=\"●\"" not in footer_source
 
 
 def test_gui_presents_audio_as_optional() -> None:
