@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="42" y1="22" x2="214" y2="234" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8FBFF"/>
+      <stop offset="1" stop-color="#EAF4FF"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="72" y1="58" x2="190" y2="184" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2F8BFF"/>
+      <stop offset="1" stop-color="#007AFF"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#8AA3C2" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect x="12" y="12" width="232" height="232" rx="58" fill="url(#bg)" stroke="#D9E4F2" stroke-width="3"/>
+  <path d="M76 70H180C195.464 70 208 82.536 208 98V154C208 169.464 195.464 182 180 182H135L102 209V182H76C60.536 182 48 169.464 48 154V98C48 82.536 60.536 70 76 70Z" fill="url(#bubble)" filter="url(#softShadow)"/>
+  <path d="M88 126L115 153L170 98" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="182" cy="79" r="22" fill="#FFFFFF"/>
+  <circle cx="182" cy="79" r="12" fill="#34C759"/>
+</svg>

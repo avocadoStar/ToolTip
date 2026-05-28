@@ -7,6 +7,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
+APP_NAME = "灵犀提醒"
+LEGACY_APP_NAME = "AgentNotifyConfigurator"
+ICON_PATH = ROOT / "assets" / "lingxi_icon.ico"
 
 
 def resolve_command(*candidates: str) -> str:
@@ -25,12 +28,30 @@ def build_pyinstaller_command(pyinstaller_exe: str) -> list[str]:
         "--onefile",
         "--windowed",
         "--name",
-        "AgentNotifyConfigurator",
+        APP_NAME,
+        "--icon",
+        str(ICON_PATH),
+        "--add-data",
+        f"{ICON_PATH};assets",
         "--collect-all",
         "customtkinter",
         "--hidden-import",
         "darkdetect",
         str(ROOT / "agent_notify_configurator.py"),
+    ]
+
+
+def release_exe_paths(dist_dir: Path) -> list[Path]:
+    return [
+        dist_dir / f"{LEGACY_APP_NAME}.exe",
+        dist_dir / f"{APP_NAME}.exe",
+    ]
+
+
+def release_spec_paths(root: Path) -> list[Path]:
+    return [
+        root / f"{LEGACY_APP_NAME}.spec",
+        root / f"{APP_NAME}.spec",
     ]
 
 
@@ -45,14 +66,17 @@ def main() -> None:
         shutil.rmtree(build_dir)
     dist_dir.mkdir(exist_ok=True)
 
-    old_exe = dist_dir / "AgentNotifyConfigurator.exe"
-    if old_exe.exists():
-        old_exe.unlink()
+    for old_exe in release_exe_paths(dist_dir):
+        if old_exe.exists():
+            old_exe.unlink()
+    for old_spec in release_spec_paths(ROOT):
+        if old_spec.exists():
+            old_spec.unlink()
 
     command = build_pyinstaller_command(pyinstaller_exe)
     print("[RUN]", " ".join(command))
     subprocess.run(command, cwd=ROOT, check=True)
-    print(f"Created {old_exe.resolve()}")
+    print(f"Created {(dist_dir / f'{APP_NAME}.exe').resolve()}")
 
 
 if __name__ == "__main__":

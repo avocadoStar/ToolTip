@@ -4,7 +4,7 @@ __pycache__/
 
 # PyInstaller scratch output stays ignored.
 build/
-# dist/AgentNotifyConfigurator.exe is intentionally tracked as the Windows release artifact.
+# dist/灵犀提醒.exe is intentionally tracked as the Windows release artifact.
 
 .claude/
 .codex/

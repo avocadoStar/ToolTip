@@ -22,7 +22,9 @@ from agent_notify_core import (
 from agent_notify_ui_components import COLORS, FONT, StatusRow, StepCard, TimelineMarker
 
 
-APP_TITLE = "AI Hook 提示配置器"
+APP_TITLE = "灵犀提醒"
+ROOT = Path(__file__).resolve().parent
+WINDOW_ICON_PATH = Path(getattr(sys, "_MEIPASS", ROOT)) / "assets" / "lingxi_icon.ico"
 
 
 def configure_app_theme() -> None:
@@ -52,6 +54,7 @@ class AgentNotifyApp(ctk.CTk):
         self.action_running = False
 
         self.title(APP_TITLE)
+        self._apply_window_icon()
         self.geometry("1180x760")
         self.minsize(1080, 700)
         self.configure(fg_color=COLORS["bg"])
@@ -60,6 +63,10 @@ class AgentNotifyApp(ctk.CTk):
         self._build_ui()
         self.refresh_status()
         self.after_idle(self.deiconify)
+
+    def _apply_window_icon(self) -> None:
+        if WINDOW_ICON_PATH.exists():
+            self.iconbitmap(str(WINDOW_ICON_PATH))
 
     def _on_window_mapped(self, event) -> None:
         if event.widget is self:

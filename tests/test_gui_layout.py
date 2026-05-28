@@ -13,6 +13,15 @@ def test_status_panel_uses_scrollable_frame_for_overflow() -> None:
     assert "self.steps_scroll" in source
 
 
+def test_gui_title_uses_chinese_app_name_and_window_icon() -> None:
+    source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
+
+    assert agent_notify_configurator.APP_TITLE == "灵犀提醒"
+    assert agent_notify_configurator.WINDOW_ICON_PATH.name == "lingxi_icon.ico"
+    assert "def _apply_window_icon" in source
+    assert "self.iconbitmap" in source
+
+
 def test_gui_initializes_theme_before_window_creation_and_repaints_on_restore() -> None:
     init_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.__init__)
     module_source = inspect.getsource(agent_notify_configurator)

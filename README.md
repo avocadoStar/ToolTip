@@ -16,14 +16,14 @@
 - `requirements.txt`：运行、测试和打包依赖。
 - `tests/test_agent_notify_core.py`：核心行为测试。
 - `tests/test_gui_layout.py`：GUI 静态结构测试。
-- `dist/AgentNotifyConfigurator.exe`：构建后的可双击 GUI 程序。
+- `dist/灵犀提醒.exe`：构建后的可双击 GUI 程序。
 
 ## 使用 EXE
 
 双击运行：
 
 ```text
-dist\AgentNotifyConfigurator.exe
+dist\灵犀提醒.exe
 ```
 
 界面中按顺序操作：
@@ -82,7 +82,7 @@ python build_windows.py
 构建完成后生成：
 
 ```text
-dist\AgentNotifyConfigurator.exe
+dist\灵犀提醒.exe
 ```
 
 ## 验证
