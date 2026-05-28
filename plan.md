@@ -102,13 +102,13 @@
 **注意事项**：脚本文本行为不能变；WPF toast、音频可选、VS Code 前台静默都必须保留。
 
 **TODO**
-- [ ] 创建 `agent_notify_script.py`。
-- [ ] 移入 `get_notify_script_content()`。
-- [ ] `agent_notify_core.py` 从 script 模块导入该函数。
-- [ ] 保留现有 PowerShell parser 测试。
-- [ ] 运行 `python -m pytest tests/test_agent_notify_core.py -q`。
-- [ ] 做一次无音频 PowerShell 烟测。
-- [ ] 提交：`refactor: isolate notification script template`
+- [x] 创建 `agent_notify_script.py`。
+- [x] 移入 `get_notify_script_content()`。
+- [x] `agent_notify_core.py` 从 script 模块导入该函数。
+- [x] 保留现有 PowerShell parser 测试。
+- [x] 运行 `python -m pytest tests/test_agent_notify_core.py -q`。
+- [x] 做一次无音频 PowerShell 烟测。
+- [x] 提交：`refactor: isolate notification script template`
 
 ### 第五阶段：抽出 GUI 组件
 
@@ -179,7 +179,7 @@
 - [x] 阶段一：写入 `plan.md` 并确认基线
 - [x] 阶段二：抽出 `agent_notify_config.py`
 - [x] 阶段三：抽出 `agent_notify_hooks.py`
-- [ ] 阶段四：抽出 `agent_notify_script.py`
+- [x] 阶段四：抽出 `agent_notify_script.py`
 - [ ] 阶段五：抽出 `agent_notify_ui_components.py`
 - [ ] 阶段六：清理 `AgentNotifyApp` 内部编排
 - [ ] 阶段七：调整测试与 `.gitignore` 注释
