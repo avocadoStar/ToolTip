@@ -49,8 +49,8 @@ def test_gui_uses_true_macos_settings_navigation() -> None:
     assert hasattr(agent_notify_ui_components, "SubtleButton")
     assert not hasattr(agent_notify_ui_components, "MoreDisclosure")
     assert agent_notify_ui_components.COLORS["bg"] == "#F5F5F7"
-    assert agent_notify_ui_components.COLORS["list"] == "#FBFBFD"
-    assert agent_notify_ui_components.COLORS["text"] == "#1D1D1F"
+    assert agent_notify_ui_components.COLORS["list"] == "#FAFAFC"
+    assert agent_notify_ui_components.COLORS["text"] == "#26262A"
     assert agent_notify_ui_components.COLORS["muted"] == "#5F5F64"
     assert agent_notify_ui_components.COLORS["blue"] == "#0071E3"
     assert "self.current_page = ctk.StringVar(value=\"notifications\")" in app_source
@@ -101,19 +101,29 @@ def test_gui_uses_compact_continuous_settings_metrics() -> None:
     button_source = inspect.getsource(agent_notify_ui_components.SubtleButton)
 
     assert agent_notify_ui_components.SIDEBAR_WIDTH == 220
-    assert agent_notify_ui_components.CONTENT_MAX_WIDTH == 760
-    assert agent_notify_ui_components.ROW_HEIGHT == 38
-    assert agent_notify_ui_components.NAV_ROW_HEIGHT == 32
-    assert agent_notify_ui_components.BUTTON_HEIGHT == 28
-    assert 'self.geometry("920x560")' in init_source
-    assert "self.minsize(820, 500)" in init_source
+    assert agent_notify_ui_components.CONTENT_MAX_WIDTH == 640
+    assert agent_notify_ui_components.ROW_HEIGHT == 48
+    assert agent_notify_ui_components.NAV_ROW_HEIGHT == 38
+    assert agent_notify_ui_components.BUTTON_HEIGHT == 32
+    assert agent_notify_ui_components.PAGE_TITLE_SIZE == 30
+    assert agent_notify_ui_components.NAV_TEXT_SIZE == 15
+    assert agent_notify_ui_components.ROW_TEXT_SIZE == 15
+    assert agent_notify_ui_components.STATUS_TEXT_SIZE == 14
+    assert agent_notify_ui_components.BUTTON_TEXT_SIZE == 14
+    assert 'self.geometry("980x620")' in init_source
+    assert "self.minsize(960, 540)" in init_source
+    assert agent_notify_ui_components.CONTENT_MAX_WIDTH + agent_notify_ui_components.SIDEBAR_WIDTH + 24 + 64 <= 980
     assert "SIDEBAR_WIDTH" in main_source
     assert "CONTENT_MAX_WIDTH" in main_source
     assert "height=ROW_HEIGHT" in component_source
     assert "height=BUTTON_HEIGHT" in component_source
+    assert "font=(FONT, NAV_TEXT_SIZE, \"bold\")" in component_source
+    assert "font=(FONT, ROW_TEXT_SIZE, \"bold\")" in component_source
+    assert "font=(FONT, BUTTON_TEXT_SIZE, \"bold\")" in component_source
     assert "font=(FONT, 28, \"bold\")" not in header_source
     assert "font=(FONT, 22)" not in header_source
-    assert "font=(FONT, 20, \"bold\")" in header_source
+    assert "font=(FONT, 20, \"bold\")" not in header_source
+    assert "font=(FONT, PAGE_TITLE_SIZE, \"bold\")" in header_source
     assert "CTkLabel" not in settings_list_source
     assert "red_soft" not in button_source
     assert "COLORS[\"green\"]" not in footer_source

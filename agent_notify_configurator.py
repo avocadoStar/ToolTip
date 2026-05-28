@@ -32,6 +32,7 @@ from agent_notify_ui_components import (
     CONTENT_MAX_WIDTH,
     FONT,
     IconCanvas,
+    PAGE_TITLE_SIZE,
     SIDEBAR_WIDTH,
     SettingRow,
     SettingsList,
@@ -77,8 +78,8 @@ class AgentNotifyApp(ctk.CTk):
 
         self.title(APP_TITLE)
         self._apply_window_icon()
-        self.geometry("920x560")
-        self.minsize(820, 500)
+        self.geometry("980x620")
+        self.minsize(960, 540)
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
         self._apply_window_background()
         self.bind("<Map>", self._on_window_paint_event, add="+")
@@ -138,7 +139,7 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_main(self) -> None:
         self.main_frame = ctk.CTkFrame(self, fg_color=COLORS["bg"], corner_radius=0)
-        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=28, pady=(22, 22))
+        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=32, pady=(30, 26))
         self.main_frame.grid_columnconfigure(0, weight=0, minsize=SIDEBAR_WIDTH)
         self.main_frame.grid_columnconfigure(1, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
@@ -169,7 +170,7 @@ class AgentNotifyApp(ctk.CTk):
 
     def _build_sidebar(self) -> None:
         brand = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        brand.grid(row=0, column=0, sticky="ew", padx=8, pady=(4, 18))
+        brand.grid(row=0, column=0, sticky="ew", padx=8, pady=(4, 22))
         brand.grid_columnconfigure(1, weight=1)
         IconCanvas(brand, "app", COLORS["blue"], size=26).grid(row=0, column=0, padx=(2, 8), pady=3)
         ctk.CTkLabel(
@@ -227,14 +228,14 @@ class AgentNotifyApp(ctk.CTk):
         ctk.CTkLabel(
             self.content_panel,
             text=title,
-            font=(FONT, 20, "bold"),
+            font=(FONT, PAGE_TITLE_SIZE, "bold"),
             text_color=COLORS["text"],
             anchor="w",
-        ).grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 12))
+        ).grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 18))
 
     def _place_list(self) -> SettingsList:
         settings_list = SettingsList(self.content_panel)
-        settings_list.grid(row=1, column=0, sticky="ew", padx=2, pady=(0, 8))
+        settings_list.grid(row=1, column=0, sticky="ew", padx=2, pady=(0, 12))
         return settings_list
 
     def _build_notifications_page(self) -> None:
@@ -272,7 +273,7 @@ class AgentNotifyApp(ctk.CTk):
                 "连接",
                 command=lambda: self.run_action("正在连接...", self.install, "连接完成。"),
                 primary=True,
-                width=82,
+                width=88,
             ),
             is_last=True,
         ).grid(row=2, column=0, sticky="ew")
@@ -284,7 +285,7 @@ class AgentNotifyApp(ctk.CTk):
         SettingRow(
             settings_list.list,
             "提示音",
-            control_factory=lambda parent: SubtleButton(parent, "选择", command=self.choose_audio, width=82),
+            control_factory=lambda parent: SubtleButton(parent, "选择", command=self.choose_audio, width=88),
             is_last=True,
         ).grid(row=1, column=0, sticky="ew")
 
@@ -298,7 +299,7 @@ class AgentNotifyApp(ctk.CTk):
                 parent,
                 "测试",
                 command=lambda: self.run_action("正在测试通知...", self.test_notice, "测试通知已发送。"),
-                width=82,
+                width=88,
             ),
         ).grid(row=0, column=0, sticky="ew")
         SettingRow(
@@ -308,18 +309,18 @@ class AgentNotifyApp(ctk.CTk):
                 parent,
                 "生成",
                 command=lambda: self.run_action("正在生成脚本...", self.generate_script, "脚本已生成。"),
-                width=82,
+                width=88,
             ),
         ).grid(row=1, column=0, sticky="ew")
         SettingRow(
             settings_list.list,
             "复制配置摘要",
-            control_factory=lambda parent: SubtleButton(parent, "复制", command=self.copy_summary, width=82),
+            control_factory=lambda parent: SubtleButton(parent, "复制", command=self.copy_summary, width=88),
         ).grid(row=2, column=0, sticky="ew")
         SettingRow(
             settings_list.list,
             "查看诊断日志",
-            control_factory=lambda parent: SubtleButton(parent, "打开", command=self.open_notify_log, width=82),
+            control_factory=lambda parent: SubtleButton(parent, "打开", command=self.open_notify_log, width=88),
         ).grid(row=3, column=0, sticky="ew")
         SettingRow(
             settings_list.list,
@@ -329,7 +330,7 @@ class AgentNotifyApp(ctk.CTk):
                 "撤销",
                 command=self.confirm_uninstall,
                 danger=True,
-                width=82,
+                width=88,
             ),
             is_last=True,
         ).grid(row=4, column=0, sticky="ew")
