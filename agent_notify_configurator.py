@@ -105,7 +105,50 @@ class AgentNotifyApp(ctk.CTk):
         self._build_side_panel(main)
 
     def _build_timeline_steps(self) -> None:
-        steps = [
+        for index, step in enumerate(self._step_definitions()):
+            number, title, description, icon, icon_color, icon_bg, status, button, color, text_color, command = step
+            TimelineMarker(
+                self.steps_scroll,
+                number,
+                show_top=index > 0,
+                show_bottom=True,
+            ).grid(row=index, column=0, padx=(0, 18), pady=(0, 16), sticky="n")
+            StepCard(
+                self.steps_scroll,
+                title=title,
+                description=description,
+                icon=icon,
+                icon_color=icon_color,
+                icon_bg=icon_bg,
+                status_var=status,
+                button_text=button,
+                button_color=color,
+                button_text_color=text_color,
+                button_border_color=color,
+                command=command,
+            ).grid(row=index, column=1, sticky="ew", pady=(0, 16))
+
+        TimelineMarker(
+            self.steps_scroll,
+            "6",
+            show_top=True,
+            show_bottom=False,
+        ).grid(row=5, column=0, padx=(0, 18), pady=(0, 0), sticky="n")
+        StepCard(
+            self.steps_scroll,
+            title="VS Code 前台静默（可选）",
+            description="当 VS Code 位于前台时，不播放声音也不显示通知。",
+            icon="monitor",
+            icon_color=COLORS["cyan"],
+            icon_bg=COLORS["cyan_light"],
+            status_var=self.suppress_status_var,
+            button_color=COLORS["blue"],
+            switch_var=self.suppress_when_vscode_focused_var,
+            switch_command=self.save_suppression_preference,
+        ).grid(row=5, column=1, sticky="ew", pady=(0, 0))
+
+    def _step_definitions(self):
+        return [
             (
                 "1",
                 "选择提示音",
@@ -172,48 +215,6 @@ class AgentNotifyApp(ctk.CTk):
                 self.confirm_uninstall,
             ),
         ]
-
-        for index, step in enumerate(steps):
-            number, title, description, icon, icon_color, icon_bg, status, button, color, text_color, command = step
-            TimelineMarker(
-                self.steps_scroll,
-                number,
-                show_top=index > 0,
-                show_bottom=True,
-            ).grid(row=index, column=0, padx=(0, 18), pady=(0, 16), sticky="n")
-            StepCard(
-                self.steps_scroll,
-                title=title,
-                description=description,
-                icon=icon,
-                icon_color=icon_color,
-                icon_bg=icon_bg,
-                status_var=status,
-                button_text=button,
-                button_color=color,
-                button_text_color=text_color,
-                button_border_color=color,
-                command=command,
-            ).grid(row=index, column=1, sticky="ew", pady=(0, 16))
-
-        TimelineMarker(
-            self.steps_scroll,
-            "6",
-            show_top=True,
-            show_bottom=False,
-        ).grid(row=5, column=0, padx=(0, 18), pady=(0, 0), sticky="n")
-        StepCard(
-            self.steps_scroll,
-            title="VS Code 前台静默（可选）",
-            description="当 VS Code 位于前台时，不播放声音也不显示通知。",
-            icon="monitor",
-            icon_color=COLORS["cyan"],
-            icon_bg=COLORS["cyan_light"],
-            status_var=self.suppress_status_var,
-            button_color=COLORS["blue"],
-            switch_var=self.suppress_when_vscode_focused_var,
-            switch_command=self.save_suppression_preference,
-        ).grid(row=5, column=1, sticky="ew", pady=(0, 0))
 
     def _build_side_panel(self, master) -> None:
         side = ctk.CTkFrame(master, fg_color=COLORS["bg"], width=330)
@@ -393,6 +394,15 @@ class AgentNotifyApp(ctk.CTk):
         popup.configure(fg_color=COLORS["card"])
         popup.grid_columnconfigure(0, weight=1)
 
+        progress = self._build_loading_popup(popup, message)
+        progress.start()
+        popup.update_idletasks()
+        x = self.winfo_rootx() + max(0, (self.winfo_width() - popup.winfo_width()) // 2)
+        y = self.winfo_rooty() + max(0, (self.winfo_height() - popup.winfo_height()) // 2)
+        popup.geometry(f"+{x}+{y}")
+        self.loading_popup = popup
+
+    def _build_loading_popup(self, popup: ctk.CTkToplevel, message: str) -> ctk.CTkProgressBar:
         ctk.CTkLabel(
             popup,
             text=message,
@@ -413,13 +423,7 @@ class AgentNotifyApp(ctk.CTk):
             text_color=COLORS["muted"],
         ).grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 20))
 
-        progress = popup.grid_slaves(row=1, column=0)[0]
-        progress.start()
-        popup.update_idletasks()
-        x = self.winfo_rootx() + max(0, (self.winfo_width() - popup.winfo_width()) // 2)
-        y = self.winfo_rooty() + max(0, (self.winfo_height() - popup.winfo_height()) // 2)
-        popup.geometry(f"+{x}+{y}")
-        self.loading_popup = popup
+        return popup.grid_slaves(row=1, column=0)[0]
 
     def close_loading_popup(self) -> None:
         if self.loading_popup is None:
@@ -470,6 +474,12 @@ class AgentNotifyApp(ctk.CTk):
         audio_selected = bool(self.audio_var.get().strip())
         hook_ready = status["codex"] or status["claude"]
 
+        self._update_status_rows(status, audio_selected, hook_ready)
+
+        if self.status_var.get() in {"就绪。", "状态已刷新。"}:
+            self.status_var.set("提示：提示音可选；未选择时，当 Codex 或 Claude Code 需要您操作会静音显示右下角通知。")
+
+    def _update_status_rows(self, status: dict, audio_selected: bool, hook_ready: bool) -> None:
         self.audio_status_var.set("已选择文件" if audio_selected else "未选择，将静音显示通知")
         self.script_status_var.set("已生成" if status["script"] else "尚未生成")
         self.hook_status_var.set("已安装" if hook_ready else "尚未安装")
@@ -481,9 +491,6 @@ class AgentNotifyApp(ctk.CTk):
         self.status_rows["script"].set_text("已生成" if status["script"] else "未生成")
         self.status_rows["hook"].set_text("已安装" if hook_ready else "未安装")
         self.status_rows["test"].set_text("已测试" if self.notice_tested else "未测试")
-
-        if self.status_var.get() in {"就绪。", "状态已刷新。"}:
-            self.status_var.set("提示：提示音可选；未选择时，当 Codex 或 Claude Code 需要您操作会静音显示右下角通知。")
 
 
 def main() -> None:

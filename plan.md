@@ -134,12 +134,12 @@
 **注意事项**：不改按钮功能、不改文案策略、不改 Hook 调用。
 
 **TODO**
-- [ ] 将 `_build_timeline_steps()` 中步骤数据抽成同文件私有方法 `_step_definitions()`。
-- [ ] 将右侧状态行更新逻辑抽成小方法 `_update_status_rows()`。
-- [ ] 将 loading popup 布局抽成小方法 `_build_loading_popup()`，行为不变。
-- [ ] 运行 `python -m pytest tests/test_gui_layout.py -q`。
-- [ ] 运行 GUI 启动烟测。
-- [ ] 提交：`refactor: simplify configurator app layout`
+- [x] 将 `_build_timeline_steps()` 中步骤数据抽成同文件私有方法 `_step_definitions()`。
+- [x] 将右侧状态行更新逻辑抽成小方法 `_update_status_rows()`。
+- [x] 将 loading popup 布局抽成小方法 `_build_loading_popup()`，行为不变。
+- [x] 运行 `python -m pytest tests/test_gui_layout.py -q`。
+- [x] 运行 GUI 启动烟测。
+- [x] 提交：`refactor: simplify configurator app layout`
 
 ### 第七阶段：测试维护与 `.gitignore` 说明
 
@@ -181,7 +181,7 @@
 - [x] 阶段三：抽出 `agent_notify_hooks.py`
 - [x] 阶段四：抽出 `agent_notify_script.py`
 - [x] 阶段五：抽出 `agent_notify_ui_components.py`
-- [ ] 阶段六：清理 `AgentNotifyApp` 内部编排
+- [x] 阶段六：清理 `AgentNotifyApp` 内部编排
 - [ ] 阶段七：调整测试与 `.gitignore` 注释
 - [ ] 阶段八：更新 README、构建 exe、最终验证
 
