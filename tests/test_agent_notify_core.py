@@ -283,14 +283,24 @@ def test_generated_notify_script_uses_custom_card_toast_instead_of_balloon_tip(t
 
     script = paths.notify_script_path.read_text(encoding="utf-8-sig")
     assert "function Show-ToastNotice" in script
+    assert "PresentationFramework" in script
+    assert "PresentationCore" in script
+    assert "WindowsBase" in script
+    assert "XamlReader" in script
     assert "NotifyIcon" not in script
     assert "ShowBalloonTip" not in script
-    assert "FormBorderStyle" in script
-    assert "Get-RoundedRectanglePath" in script
-    assert "StartPosition = 'Manual'" in script
+    assert "FormBorderStyle" not in script
+    assert "Get-RoundedRectanglePath" not in script
+    assert "打开 VS Code" not in script
+    assert "Open VS Code" not in script
+    assert 'WindowStyle="None"' in script
+    assert 'AllowsTransparency="True"' in script
+    assert 'CornerRadius="20"' in script
+    assert "DropShadowEffect" in script
     assert "TopMost = $true" in script
-    assert "#2563EB" in script
-    assert "#17233C" in script
+    assert "closeButton" in script
+    assert "#F8FBFF" in script
+    assert "#111827" in script
     assert "Show-ToastNotice -Title $notice[0] -Message $notice[1]" in script
 
 

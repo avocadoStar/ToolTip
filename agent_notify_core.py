@@ -333,8 +333,10 @@ def get_notify_script_content() -> str:
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName System.Xaml
 
 $baseDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $configPath = Join-Path $baseDir 'config.json'
@@ -456,108 +458,151 @@ public static extern int mciSendString(string command, System.Text.StringBuilder
     }
 }
 
-function Get-RoundedRectanglePath {
-    param(
-        [Parameter(Mandatory)][System.Drawing.Rectangle]$Bounds,
-        [Parameter(Mandatory)][int]$Radius
-    )
-
-    $diameter = $Radius * 2
-    $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
-    $path.AddArc($Bounds.X, $Bounds.Y, $diameter, $diameter, 180, 90)
-    $path.AddArc($Bounds.Right - $diameter, $Bounds.Y, $diameter, $diameter, 270, 90)
-    $path.AddArc($Bounds.Right - $diameter, $Bounds.Bottom - $diameter, $diameter, $diameter, 0, 90)
-    $path.AddArc($Bounds.X, $Bounds.Bottom - $diameter, $diameter, $diameter, 90, 90)
-    $path.CloseFigure()
-    return $path
-}
-
 function Show-ToastNotice {
     param(
         [Parameter(Mandatory)][string]$Title,
         [Parameter(Mandatory)][string]$Message
     )
 
-    $form = [System.Windows.Forms.Form]::new()
-    $form.Text = 'AI Hook 提示'
-    $form.FormBorderStyle = 'None'
-    $form.StartPosition = 'Manual'
-    $form.ShowInTaskbar = $false
-    $form.TopMost = $true
-    $form.BackColor = [System.Drawing.ColorTranslator]::FromHtml('#FFFFFF')
-    $form.Size = [System.Drawing.Size]::new(380, 142)
-    $form.Padding = [System.Windows.Forms.Padding]::new(18)
+    [xml]$xaml = @'
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AI Hook 提示"
+        Width="760"
+        Height="220"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="Transparent"
+        FontFamily="Microsoft YaHei UI"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True">
+    <Border Background="#F8FBFF"
+            BorderBrush="#D9E4F2"
+            BorderThickness="1"
+            CornerRadius="20">
+        <Border.Effect>
+            <DropShadowEffect Color="#8AA3C2"
+                              BlurRadius="26"
+                              ShadowDepth="4"
+                              Opacity="0.28" />
+        </Border.Effect>
+        <Grid Margin="42,40,38,30">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="78" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="72" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="58" />
+            </Grid.ColumnDefinitions>
 
-    $workingArea = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-    $form.Location = [System.Drawing.Point]::new(
-        $workingArea.Right - $form.Width - 22,
-        $workingArea.Bottom - $form.Height - 22
-    )
+            <Border Grid.Row="0"
+                    Grid.Column="0"
+                    Width="58"
+                    Height="58"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    CornerRadius="14">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#2F8BFF" Offset="0" />
+                        <GradientStop Color="#005BFF" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid>
+                    <Ellipse Width="34" Height="34" Fill="#FFFFFF" Opacity="0.96" />
+                    <Ellipse Width="17" Height="17" Fill="#1368FF" HorizontalAlignment="Right" Margin="0,0,9,0" />
+                    <Ellipse Width="11" Height="11" Fill="#BBD7FF" HorizontalAlignment="Left" Margin="17,0,0,0" />
+                </Grid>
+            </Border>
 
-    $titleLabel = [System.Windows.Forms.Label]::new()
-    $titleLabel.AutoSize = $false
-    $titleLabel.Text = $Title
-    $titleLabel.Font = [System.Drawing.Font]::new('Microsoft YaHei UI', 11, [System.Drawing.FontStyle]::Bold)
-    $titleLabel.ForeColor = [System.Drawing.ColorTranslator]::FromHtml('#17233C')
-    $titleLabel.Location = [System.Drawing.Point]::new(76, 24)
-    $titleLabel.Size = [System.Drawing.Size]::new(250, 24)
+            <TextBlock Name="titleText"
+                       Grid.Row="0"
+                       Grid.Column="1"
+                       VerticalAlignment="Top"
+                       TextTrimming="CharacterEllipsis"
+                       FontSize="32"
+                       FontWeight="SemiBold"
+                       Foreground="#111827" />
 
-    $messageLabel = [System.Windows.Forms.Label]::new()
-    $messageLabel.AutoSize = $false
-    $messageLabel.Text = $Message
-    $messageLabel.Font = [System.Drawing.Font]::new('Microsoft YaHei UI', 9)
-    $messageLabel.ForeColor = [System.Drawing.ColorTranslator]::FromHtml('#51627F')
-    $messageLabel.Location = [System.Drawing.Point]::new(76, 54)
-    $messageLabel.Size = [System.Drawing.Size]::new(274, 52)
+            <Button Name="closeButton"
+                    Grid.Row="0"
+                    Grid.Column="2"
+                    Width="42"
+                    Height="42"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Content="×"
+                    Cursor="Hand"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    FontSize="34"
+                    FontWeight="Light"
+                    Foreground="#3F3F46" />
 
-    $closeButton = [System.Windows.Forms.Button]::new()
-    $closeButton.Text = '×'
-    $closeButton.FlatStyle = 'Flat'
-    $closeButton.FlatAppearance.BorderSize = 0
-    $closeButton.BackColor = [System.Drawing.ColorTranslator]::FromHtml('#FFFFFF')
-    $closeButton.ForeColor = [System.Drawing.ColorTranslator]::FromHtml('#8492A8')
-    $closeButton.Font = [System.Drawing.Font]::new('Microsoft YaHei UI', 12)
-    $closeButton.Location = [System.Drawing.Point]::new(336, 14)
-    $closeButton.Size = [System.Drawing.Size]::new(28, 28)
-    $closeButton.Add_Click({ $form.Close() })
+            <Border Grid.Row="1"
+                    Grid.Column="0"
+                    Width="58"
+                    Height="58"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    CornerRadius="29"
+                    Background="#DDE9FF">
+                <TextBlock Text="!"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Margin="0,-3,0,0"
+                           FontSize="38"
+                           FontWeight="SemiBold"
+                           Foreground="#0B5CEB" />
+            </Border>
 
-    $timer = [System.Windows.Forms.Timer]::new()
-    $timer.Interval = 5000
+            <TextBlock Name="messageText"
+                       Grid.Row="1"
+                       Grid.Column="1"
+                       Grid.ColumnSpan="2"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       FontSize="26"
+                       LineHeight="36"
+                       Foreground="#3F3F46" />
+        </Grid>
+    </Border>
+</Window>
+'@
+
+    $reader = [System.Xml.XmlNodeReader]::new($xaml)
+    $window = [System.Windows.Markup.XamlReader]::Load($reader)
+    $window.TopMost = $true
+
+    $window.FindName('titleText').Text = $Title
+    $window.FindName('messageText').Text = $Message
+    $window.FindName('closeButton').Add_Click({ $window.Close() })
+
+    $workingArea = [System.Windows.SystemParameters]::WorkArea
+    $window.Left = $workingArea.Right - $window.Width - 22
+    $window.Top = $workingArea.Bottom - $window.Height - 22
+
+    $timer = [System.Windows.Threading.DispatcherTimer]::new()
+    $timer.Interval = [TimeSpan]::FromSeconds(5)
     $timer.Add_Tick({
         $timer.Stop()
-        $form.Close()
+        $window.Close()
     })
 
-    $form.Add_Paint({
-        param($sender, $event)
-        $graphics = $event.Graphics
-        $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-
-        $bounds = [System.Drawing.Rectangle]::new(0, 0, $form.Width - 1, $form.Height - 1)
-        $borderPath = Get-RoundedRectanglePath -Bounds $bounds -Radius 16
-        $form.Region = [System.Drawing.Region]::new($borderPath)
-
-        $accentBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml('#2563EB'))
-        $iconBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml('#EAF2FF'))
-        $borderPen = [System.Drawing.Pen]::new([System.Drawing.ColorTranslator]::FromHtml('#D9E3F0'), 1)
-        $graphics.DrawPath($borderPen, $borderPath)
-        $graphics.FillEllipse($iconBrush, 22, 28, 40, 40)
-        $graphics.FillEllipse($accentBrush, 35, 39, 14, 14)
-        $graphics.FillRectangle($accentBrush, 0, 0, 5, $form.Height)
-
-        $accentBrush.Dispose()
-        $iconBrush.Dispose()
-        $borderPen.Dispose()
-        $borderPath.Dispose()
+    $window.Add_Closed({
+        $timer.Stop()
     })
-
-    $form.Controls.Add($titleLabel)
-    $form.Controls.Add($messageLabel)
-    $form.Controls.Add($closeButton)
-    $form.Add_Shown({ $timer.Start() })
-    $form.ShowDialog() | Out-Null
-    $timer.Dispose()
-    $form.Dispose()
+    $window.Add_ContentRendered({
+        $timer.Start()
+        $window.Activate() | Out-Null
+    })
+    $window.ShowDialog() | Out-Null
 }
 
 $notice = Get-NoticeText -Source $Source -Event $Event
