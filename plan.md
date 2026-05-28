@@ -118,13 +118,13 @@
 **注意事项**：CustomTkinter 参数必须通过 GUI 启动烟测验证。
 
 **TODO**
-- [ ] 创建 `agent_notify_ui_components.py`。
-- [ ] 移入 `COLORS`、`FONT`、`IconCanvas`、`TimelineMarker`、`StepCard`、`StatusRow`。
-- [ ] 若需要步骤定义或状态文案 helper，放在同一文件，不新增 `agent_notify_ui_model.py`。
-- [ ] 更新 `agent_notify_configurator.py` 导入。
-- [ ] 运行 `python -m pytest tests/test_gui_layout.py -q`。
-- [ ] GUI 启动 3 秒烟测，确认无 stderr。
-- [ ] 提交：`refactor: extract configurator UI components`
+- [x] 创建 `agent_notify_ui_components.py`。
+- [x] 移入 `COLORS`、`FONT`、`IconCanvas`、`TimelineMarker`、`StepCard`、`StatusRow`。
+- [x] 若需要步骤定义或状态文案 helper，放在同一文件，不新增 `agent_notify_ui_model.py`。
+- [x] 更新 `agent_notify_configurator.py` 导入。
+- [x] 运行 `python -m pytest tests/test_gui_layout.py -q`。
+- [x] GUI 启动 3 秒烟测，确认无 stderr。
+- [x] 提交：`refactor: extract configurator UI components`
 
 ### 第六阶段：清理 GUI 编排代码
 
@@ -180,7 +180,7 @@
 - [x] 阶段二：抽出 `agent_notify_config.py`
 - [x] 阶段三：抽出 `agent_notify_hooks.py`
 - [x] 阶段四：抽出 `agent_notify_script.py`
-- [ ] 阶段五：抽出 `agent_notify_ui_components.py`
+- [x] 阶段五：抽出 `agent_notify_ui_components.py`
 - [ ] 阶段六：清理 `AgentNotifyApp` 内部编排
 - [ ] 阶段七：调整测试与 `.gitignore` 注释
 - [ ] 阶段八：更新 README、构建 exe、最终验证

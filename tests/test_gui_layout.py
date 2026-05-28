@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 
 import agent_notify_configurator
+import agent_notify_ui_components
 
 
 def test_status_panel_uses_scrollable_frame_for_overflow() -> None:
@@ -13,7 +14,7 @@ def test_status_panel_uses_scrollable_frame_for_overflow() -> None:
 
 
 def test_gui_uses_light_stepper_layout_from_reference() -> None:
-    source = inspect.getsource(agent_notify_configurator)
+    source = inspect.getsource(agent_notify_configurator) + inspect.getsource(agent_notify_ui_components)
 
     assert "class StepCard" in source
     assert "class StatusRow" in source
@@ -44,7 +45,7 @@ def test_gui_presents_audio_as_optional() -> None:
 
 
 def test_timeline_marker_draws_connector_lines_between_step_numbers() -> None:
-    source = inspect.getsource(agent_notify_configurator.TimelineMarker)
+    source = inspect.getsource(agent_notify_ui_components.TimelineMarker)
 
     assert "show_top" in source
     assert "show_bottom" in source
@@ -71,7 +72,7 @@ def test_run_action_shows_loading_dialog_and_preserves_exception_message() -> No
 
 def test_gui_exposes_vscode_foreground_suppression_switch() -> None:
     app_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
-    module_source = inspect.getsource(agent_notify_configurator)
+    module_source = inspect.getsource(agent_notify_configurator) + inspect.getsource(agent_notify_ui_components)
 
     assert "suppress_when_vscode_focused_var" in app_source
     assert "load_suppress_when_vscode_focused" in app_source
