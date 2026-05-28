@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import threading
+import time
 from pathlib import Path
 from tkinter import Canvas, filedialog, messagebox
 
@@ -91,28 +92,25 @@ class TimelineMarker(ctk.CTkFrame):
     def __init__(self, master, number: str, show_top: bool, show_bottom: bool) -> None:
         super().__init__(master, width=68, height=116, fg_color=COLORS["bg"], corner_radius=0)
         self.grid_propagate(False)
-        self.canvas = Canvas(self, width=68, height=116, bg=COLORS["bg"], bd=0, highlightthickness=0)
-        self.canvas.place(relx=0.5, rely=0.5, anchor="center")
-        self._draw_marker(number, show_top=show_top, show_bottom=show_bottom)
+        self.grid_columnconfigure(0, weight=1)
 
-    def _draw_marker(self, number: str, show_top: bool, show_bottom: bool) -> None:
-        center_x = 34
-        center_y = 34
-        radius = 18
-        if show_top:
-            self.canvas.create_line(center_x, 0, center_x, center_y - radius, fill=COLORS["line"], width=1)
-        if show_bottom:
-            self.canvas.create_line(center_x, center_y + radius, center_x, 116, fill=COLORS["line"], width=1)
-        self.canvas.create_oval(
-            center_x - radius,
-            center_y - radius,
-            center_x + radius,
-            center_y + radius,
-            fill=COLORS["blue"],
-            outline=COLORS["blue"],
-            width=0,
+        top_line = ctk.CTkFrame(self, width=1, height=16, fg_color=COLORS["line"] if show_top else COLORS["bg"])
+        top_line.grid(row=0, column=0, pady=0)
+
+        badge = ctk.CTkLabel(
+            self,
+            text=number,
+            width=36,
+            height=36,
+            fg_color=COLORS["blue"],
+            text_color="#FFFFFF",
+            font=(FONT, 15, "bold"),
+            corner_radius=18,
         )
-        self.canvas.create_text(center_x, center_y, text=number, fill="#FFFFFF", font=(FONT, 15, "bold"))
+        badge.grid(row=1, column=0)
+
+        bottom_line = ctk.CTkFrame(self, width=1, height=64, fg_color=COLORS["line"] if show_bottom else COLORS["bg"])
+        bottom_line.grid(row=2, column=0, pady=0, sticky="n")
 
 
 class StepCard(ctk.CTkFrame):
@@ -239,6 +237,8 @@ class AgentNotifyApp(ctk.CTk):
         self.uninstall_status_var = ctk.StringVar(value="尚未安装")
         self.suppress_status_var = ctk.StringVar(value="已开启" if self.suppress_when_vscode_focused_var.get() else "已关闭")
         self.notice_tested = False
+        self.loading_popup: ctk.CTkToplevel | None = None
+        self.loading_started_at = 0.0
 
         self.title(APP_TITLE)
         self.geometry("1280x820")
@@ -578,8 +578,63 @@ class AgentNotifyApp(ctk.CTk):
         self.clipboard_append(self.preview_text)
         self.status_var.set("配置预览已复制。")
 
+    def show_loading_popup(self, message: str) -> None:
+        self.close_loading_popup()
+        self.loading_started_at = time.monotonic()
+        popup = ctk.CTkToplevel(self)
+        popup.title(APP_TITLE)
+        popup.geometry("320x138")
+        popup.resizable(False, False)
+        popup.transient(self)
+        popup.grab_set()
+        popup.configure(fg_color=COLORS["card"])
+        popup.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            popup,
+            text=message,
+            font=(FONT, 15, "bold"),
+            text_color=COLORS["text"],
+        ).grid(row=0, column=0, sticky="ew", padx=28, pady=(26, 10))
+        ctk.CTkProgressBar(
+            popup,
+            mode="indeterminate",
+            height=8,
+            progress_color=COLORS["blue"],
+            fg_color=COLORS["blue_light"],
+        ).grid(row=1, column=0, sticky="ew", padx=28, pady=(0, 12))
+        ctk.CTkLabel(
+            popup,
+            text="请稍候，正在处理当前步骤。",
+            font=(FONT, 12),
+            text_color=COLORS["muted"],
+        ).grid(row=2, column=0, sticky="ew", padx=28, pady=(0, 22))
+
+        progress = popup.grid_slaves(row=1, column=0)[0]
+        progress.start()
+        popup.update_idletasks()
+        x = self.winfo_rootx() + max(0, (self.winfo_width() - popup.winfo_width()) // 2)
+        y = self.winfo_rooty() + max(0, (self.winfo_height() - popup.winfo_height()) // 2)
+        popup.geometry(f"+{x}+{y}")
+        self.loading_popup = popup
+
+    def close_loading_popup(self) -> None:
+        if self.loading_popup is None:
+            return
+        popup = self.loading_popup
+        self.loading_popup = None
+        if popup.winfo_exists():
+            popup.grab_release()
+            popup.destroy()
+
+    def finish_action_after_loading(self, callback) -> None:
+        elapsed_ms = int((time.monotonic() - self.loading_started_at) * 1000)
+        delay_ms = max(0, 350 - elapsed_ms)
+        self.after(delay_ms, callback)
+
     def run_action(self, working: str, action, success: str) -> None:
         self.status_var.set(working)
+        self.show_loading_popup(working)
         self.configure(cursor="watch")
         self.update_idletasks()
 
@@ -587,19 +642,22 @@ class AgentNotifyApp(ctk.CTk):
             try:
                 action()
             except Exception as exc:  # UI boundary: show explicit failure to the user.
-                self.after(0, lambda: self.show_error(str(exc)))
+                message = str(exc)
+                self.after(0, lambda message=message: self.finish_action_after_loading(lambda: self.show_error(message)))
                 return
-            self.after(0, lambda: self.show_success(success))
+            self.after(0, lambda: self.finish_action_after_loading(lambda: self.show_success(success)))
 
         threading.Thread(target=worker, daemon=True).start()
 
     def show_success(self, message: str) -> None:
+        self.close_loading_popup()
         self.configure(cursor="")
         self.status_var.set(message)
         self.refresh_status()
         messagebox.showinfo(APP_TITLE, message)
 
     def show_error(self, message: str) -> None:
+        self.close_loading_popup()
         self.configure(cursor="")
         self.status_var.set(message)
         messagebox.showerror(APP_TITLE, message)

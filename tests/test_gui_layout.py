@@ -35,8 +35,25 @@ def test_timeline_marker_draws_connector_lines_between_step_numbers() -> None:
 
     assert "show_top" in source
     assert "show_bottom" in source
-    assert "create_line" in source
-    assert "create_oval" in source
+    assert "top_line" in source
+    assert "bottom_line" in source
+    assert 'COLORS["line"]' in source
+    assert "CTkLabel" in source
+    assert "corner_radius" in source
+    assert "create_oval" not in source
+
+
+def test_run_action_shows_loading_dialog_and_preserves_exception_message() -> None:
+    source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
+    run_action_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.run_action)
+
+    assert "def show_loading_popup" in source
+    assert "def close_loading_popup" in source
+    assert "CTkToplevel" in source
+    assert "CTkProgressBar" in source
+    assert "self.show_loading_popup(working)" in run_action_source
+    assert "message = str(exc)" in run_action_source
+    assert "lambda message=message" in run_action_source
 
 
 def test_gui_exposes_vscode_foreground_suppression_switch() -> None:
