@@ -24,9 +24,16 @@ from agent_notify_ui_components import COLORS, FONT, StatusRow, StepCard, Timeli
 
 APP_TITLE = "AI Hook 提示配置器"
 
+
+def configure_app_theme() -> None:
+    ctk.set_appearance_mode("light")
+
+
 class AgentNotifyApp(ctk.CTk):
     def __init__(self) -> None:
+        configure_app_theme()
         super().__init__()
+        self.withdraw()
         self.paths = default_paths()
         self.audio_var = ctk.StringVar(value=load_saved_audio_path(self.paths))
         self.suppress_when_vscode_focused_var = ctk.BooleanVar(
@@ -46,11 +53,22 @@ class AgentNotifyApp(ctk.CTk):
         self.title(APP_TITLE)
         self.geometry("1180x760")
         self.minsize(1080, 700)
-        ctk.set_appearance_mode("light")
         self.configure(fg_color=COLORS["bg"])
+        self.bind("<Map>", self._on_window_mapped, add="+")
 
         self._build_ui()
         self.refresh_status()
+        self.after_idle(self.deiconify)
+
+    def _on_window_mapped(self, event) -> None:
+        if event.widget is self:
+            self.after_idle(self._refresh_window_paint)
+
+    def _refresh_window_paint(self) -> None:
+        if not self.winfo_exists():
+            return
+        self.configure(fg_color=COLORS["bg"])
+        self.update_idletasks()
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)

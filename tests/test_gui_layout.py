@@ -13,6 +13,18 @@ def test_status_panel_uses_scrollable_frame_for_overflow() -> None:
     assert "self.steps_scroll" in source
 
 
+def test_gui_initializes_theme_before_window_creation_and_repaints_on_restore() -> None:
+    init_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.__init__)
+    module_source = inspect.getsource(agent_notify_configurator)
+
+    assert "def configure_app_theme" in module_source
+    assert init_source.index("configure_app_theme()") < init_source.index("super().__init__()")
+    assert 'self.bind("<Map>", self._on_window_mapped, add="+")' in init_source
+    assert "def _on_window_mapped" in module_source
+    assert "def _refresh_window_paint" in module_source
+    assert "self.after_idle(self._refresh_window_paint)" in module_source
+
+
 def test_gui_uses_light_stepper_layout_from_reference() -> None:
     app_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp)
     step_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._step_definitions)
