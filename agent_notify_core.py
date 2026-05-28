@@ -456,23 +456,108 @@ public static extern int mciSendString(string command, System.Text.StringBuilder
     }
 }
 
-function Show-BalloonNotice {
+function Get-RoundedRectanglePath {
+    param(
+        [Parameter(Mandatory)][System.Drawing.Rectangle]$Bounds,
+        [Parameter(Mandatory)][int]$Radius
+    )
+
+    $diameter = $Radius * 2
+    $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
+    $path.AddArc($Bounds.X, $Bounds.Y, $diameter, $diameter, 180, 90)
+    $path.AddArc($Bounds.Right - $diameter, $Bounds.Y, $diameter, $diameter, 270, 90)
+    $path.AddArc($Bounds.Right - $diameter, $Bounds.Bottom - $diameter, $diameter, $diameter, 0, 90)
+    $path.AddArc($Bounds.X, $Bounds.Bottom - $diameter, $diameter, $diameter, 90, 90)
+    $path.CloseFigure()
+    return $path
+}
+
+function Show-ToastNotice {
     param(
         [Parameter(Mandatory)][string]$Title,
         [Parameter(Mandatory)][string]$Message
     )
 
-    $icon = [System.Windows.Forms.NotifyIcon]::new()
-    $icon.Icon = [System.Drawing.SystemIcons]::Information
-    $icon.Text = 'AI Hook 提示'
-    $icon.BalloonTipTitle = $Title
-    $icon.BalloonTipText = $Message
-    $icon.Visible = $true
-    $icon.ShowBalloonTip(5000)
+    $form = [System.Windows.Forms.Form]::new()
+    $form.Text = 'AI Hook 提示'
+    $form.FormBorderStyle = 'None'
+    $form.StartPosition = 'Manual'
+    $form.ShowInTaskbar = $false
+    $form.TopMost = $true
+    $form.BackColor = [System.Drawing.ColorTranslator]::FromHtml('#FFFFFF')
+    $form.Size = [System.Drawing.Size]::new(380, 142)
+    $form.Padding = [System.Windows.Forms.Padding]::new(18)
 
-    Start-Sleep -Seconds 6
-    $icon.Visible = $false
-    $icon.Dispose()
+    $workingArea = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+    $form.Location = [System.Drawing.Point]::new(
+        $workingArea.Right - $form.Width - 22,
+        $workingArea.Bottom - $form.Height - 22
+    )
+
+    $titleLabel = [System.Windows.Forms.Label]::new()
+    $titleLabel.AutoSize = $false
+    $titleLabel.Text = $Title
+    $titleLabel.Font = [System.Drawing.Font]::new('Microsoft YaHei UI', 11, [System.Drawing.FontStyle]::Bold)
+    $titleLabel.ForeColor = [System.Drawing.ColorTranslator]::FromHtml('#17233C')
+    $titleLabel.Location = [System.Drawing.Point]::new(76, 24)
+    $titleLabel.Size = [System.Drawing.Size]::new(250, 24)
+
+    $messageLabel = [System.Windows.Forms.Label]::new()
+    $messageLabel.AutoSize = $false
+    $messageLabel.Text = $Message
+    $messageLabel.Font = [System.Drawing.Font]::new('Microsoft YaHei UI', 9)
+    $messageLabel.ForeColor = [System.Drawing.ColorTranslator]::FromHtml('#51627F')
+    $messageLabel.Location = [System.Drawing.Point]::new(76, 54)
+    $messageLabel.Size = [System.Drawing.Size]::new(274, 52)
+
+    $closeButton = [System.Windows.Forms.Button]::new()
+    $closeButton.Text = '×'
+    $closeButton.FlatStyle = 'Flat'
+    $closeButton.FlatAppearance.BorderSize = 0
+    $closeButton.BackColor = [System.Drawing.ColorTranslator]::FromHtml('#FFFFFF')
+    $closeButton.ForeColor = [System.Drawing.ColorTranslator]::FromHtml('#8492A8')
+    $closeButton.Font = [System.Drawing.Font]::new('Microsoft YaHei UI', 12)
+    $closeButton.Location = [System.Drawing.Point]::new(336, 14)
+    $closeButton.Size = [System.Drawing.Size]::new(28, 28)
+    $closeButton.Add_Click({ $form.Close() })
+
+    $timer = [System.Windows.Forms.Timer]::new()
+    $timer.Interval = 5000
+    $timer.Add_Tick({
+        $timer.Stop()
+        $form.Close()
+    })
+
+    $form.Add_Paint({
+        param($sender, $event)
+        $graphics = $event.Graphics
+        $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+
+        $bounds = [System.Drawing.Rectangle]::new(0, 0, $form.Width - 1, $form.Height - 1)
+        $borderPath = Get-RoundedRectanglePath -Bounds $bounds -Radius 16
+        $form.Region = [System.Drawing.Region]::new($borderPath)
+
+        $accentBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml('#2563EB'))
+        $iconBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml('#EAF2FF'))
+        $borderPen = [System.Drawing.Pen]::new([System.Drawing.ColorTranslator]::FromHtml('#D9E3F0'), 1)
+        $graphics.DrawPath($borderPen, $borderPath)
+        $graphics.FillEllipse($iconBrush, 22, 28, 40, 40)
+        $graphics.FillEllipse($accentBrush, 35, 39, 14, 14)
+        $graphics.FillRectangle($accentBrush, 0, 0, 5, $form.Height)
+
+        $accentBrush.Dispose()
+        $iconBrush.Dispose()
+        $borderPen.Dispose()
+        $borderPath.Dispose()
+    })
+
+    $form.Controls.Add($titleLabel)
+    $form.Controls.Add($messageLabel)
+    $form.Controls.Add($closeButton)
+    $form.Add_Shown({ $timer.Start() })
+    $form.ShowDialog() | Out-Null
+    $timer.Dispose()
+    $form.Dispose()
 }
 
 $notice = Get-NoticeText -Source $Source -Event $Event
@@ -482,5 +567,5 @@ if ((Test-SuppressWhenVSCodeFocused) -and (Test-VSCodeForeground)) {
 
 $audioPath = Resolve-AudioPath
 Play-NoticeSound -Path $audioPath
-Show-BalloonNotice -Title $notice[0] -Message $notice[1]
+Show-ToastNotice -Title $notice[0] -Message $notice[1]
 """

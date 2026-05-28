@@ -274,6 +274,26 @@ def test_generated_notify_script_reads_runtime_suppression_config(tmp_path: Path
     assert "return" in script
 
 
+def test_generated_notify_script_uses_custom_card_toast_instead_of_balloon_tip(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    audio = tmp_path / "source.wav"
+    audio.write_bytes(b"RIFF....WAVEfmt ")
+
+    ensure_shared_script(audio, paths)
+
+    script = paths.notify_script_path.read_text(encoding="utf-8-sig")
+    assert "function Show-ToastNotice" in script
+    assert "NotifyIcon" not in script
+    assert "ShowBalloonTip" not in script
+    assert "FormBorderStyle" in script
+    assert "Get-RoundedRectanglePath" in script
+    assert "StartPosition = 'Manual'" in script
+    assert "TopMost = $true" in script
+    assert "#2563EB" in script
+    assert "#17233C" in script
+    assert "Show-ToastNotice -Title $notice[0] -Message $notice[1]" in script
+
+
 def make_paths(root: Path) -> AgentNotifyPaths:
     return AgentNotifyPaths(
         agent_notify_dir=root / ".agent-notify",
