@@ -6,11 +6,12 @@ import agent_notify_configurator
 import agent_notify_ui_components
 
 
-def test_settings_panel_uses_scrollable_content_for_overflow() -> None:
+def test_settings_panel_uses_fixed_content_area_without_scrollbar() -> None:
     source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._build_main)
 
-    assert "CTkScrollableFrame" in source
-    assert "self.content_scroll" in source
+    assert "CTkScrollableFrame" not in source
+    assert "self.content_scroll" not in source
+    assert "self.content_area" in source
     assert "self.content_panel" in source
     assert "self.sidebar" in source
     assert "CONTENT_MAX_WIDTH" in source
@@ -48,9 +49,9 @@ def test_gui_uses_true_macos_settings_navigation() -> None:
     assert hasattr(agent_notify_ui_components, "SubtleButton")
     assert not hasattr(agent_notify_ui_components, "MoreDisclosure")
     assert agent_notify_ui_components.COLORS["bg"] == "#F5F5F7"
-    assert agent_notify_ui_components.COLORS["list"] == "#FFFFFF"
+    assert agent_notify_ui_components.COLORS["list"] == "#FBFBFD"
     assert agent_notify_ui_components.COLORS["text"] == "#1D1D1F"
-    assert agent_notify_ui_components.COLORS["muted"] == "#6E6E73"
+    assert agent_notify_ui_components.COLORS["muted"] == "#5F5F64"
     assert agent_notify_ui_components.COLORS["blue"] == "#0071E3"
     assert "self.current_page = ctk.StringVar(value=\"notifications\")" in app_source
     assert "def show_page" in app_source
@@ -91,6 +92,7 @@ def test_gui_renders_only_the_selected_page_by_default() -> None:
 
 
 def test_gui_uses_compact_continuous_settings_metrics() -> None:
+    init_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp.__init__)
     component_source = inspect.getsource(agent_notify_ui_components)
     main_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._build_main)
     header_source = inspect.getsource(agent_notify_configurator.AgentNotifyApp._build_page_header)
@@ -100,19 +102,23 @@ def test_gui_uses_compact_continuous_settings_metrics() -> None:
 
     assert agent_notify_ui_components.SIDEBAR_WIDTH == 220
     assert agent_notify_ui_components.CONTENT_MAX_WIDTH == 760
-    assert agent_notify_ui_components.ROW_HEIGHT == 40
-    assert agent_notify_ui_components.NAV_ROW_HEIGHT == 34
-    assert agent_notify_ui_components.BUTTON_HEIGHT == 30
+    assert agent_notify_ui_components.ROW_HEIGHT == 38
+    assert agent_notify_ui_components.NAV_ROW_HEIGHT == 32
+    assert agent_notify_ui_components.BUTTON_HEIGHT == 28
+    assert 'self.geometry("920x560")' in init_source
+    assert "self.minsize(820, 500)" in init_source
     assert "SIDEBAR_WIDTH" in main_source
     assert "CONTENT_MAX_WIDTH" in main_source
     assert "height=ROW_HEIGHT" in component_source
     assert "height=BUTTON_HEIGHT" in component_source
     assert "font=(FONT, 28, \"bold\")" not in header_source
-    assert "font=(FONT, 22)" in header_source
+    assert "font=(FONT, 22)" not in header_source
+    assert "font=(FONT, 20, \"bold\")" in header_source
     assert "CTkLabel" not in settings_list_source
     assert "red_soft" not in button_source
     assert "COLORS[\"green\"]" not in footer_source
     assert "text=\"●\"" not in footer_source
+    assert "textvariable=self.status_var" not in footer_source
 
 
 def test_gui_presents_audio_as_optional() -> None:

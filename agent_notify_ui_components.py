@@ -9,24 +9,24 @@ FONT = "Segoe UI Variable"
 LINE_WIDTH = 2
 SIDEBAR_WIDTH = 220
 CONTENT_MAX_WIDTH = 760
-ROW_HEIGHT = 40
-NAV_ROW_HEIGHT = 34
-BUTTON_HEIGHT = 30
+ROW_HEIGHT = 38
+NAV_ROW_HEIGHT = 32
+BUTTON_HEIGHT = 28
 
 COLORS = {
     "bg": "#F5F5F7",
     "sidebar": "#F5F5F7",
-    "list": "#FFFFFF",
-    "row_hover": "#ECECEF",
-    "nav_selected": "#E8E8ED",
+    "list": "#FBFBFD",
+    "row_hover": "#EFEFF2",
+    "nav_selected": "#EAEAEE",
     "border": "#E5E5EA",
     "button_border_subtle": "#F0F0F2",
-    "divider": "#ECECEF",
+    "divider": "#F0F0F2",
     "text": "#1D1D1F",
-    "muted": "#6E6E73",
-    "muted_light": "#A1A1A6",
+    "muted": "#5F5F64",
+    "muted_light": "#8E8E93",
     "nav_icon": "#9A9AA0",
-    "nav_icon_selected": "#6E6E73",
+    "nav_icon_selected": "#5F5F64",
     "blue": "#0071E3",
     "blue_hover": "#0066CC",
     "blue_soft": "#EAF3FF",
@@ -50,7 +50,7 @@ class IconCanvas(ctk.CTkFrame):
     ) -> None:
         super().__init__(master, width=size, height=size, fg_color="transparent", corner_radius=8)
         self.grid_propagate(False)
-        self.canvas_size = 18
+        self.canvas_size = 16
         self.canvas = Canvas(
             self,
             width=self.canvas_size,
@@ -107,16 +107,16 @@ class SidebarItem(ctk.CTkFrame):
         )
         self.grid_propagate(False)
         self.grid_columnconfigure(1, weight=1)
-        self.icon_view = IconCanvas(self, icon, self._icon_color(), size=24, bg_color=self._background())
-        self.icon_view.grid(row=0, column=0, padx=(9, 8), pady=4)
+        self.icon_view = IconCanvas(self, icon, self._icon_color(), size=22, bg_color=self._background())
+        self.icon_view.grid(row=0, column=0, padx=(8, 6), pady=4)
         self.label = ctk.CTkLabel(
             self,
             text=title,
-            font=(FONT, 12),
+            font=(FONT, 12, "bold"),
             text_color=self._text_color(),
             anchor="w",
         )
-        self.label.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=4)
+        self.label.grid(row=0, column=1, sticky="ew", padx=(0, 9), pady=4)
         self._bind_pointer_events(self)
 
     def _bind_pointer_events(self, widget) -> None:
@@ -166,7 +166,7 @@ class SettingsList(ctk.CTkFrame):
             fg_color=COLORS["list"],
             border_color=COLORS["button_border_subtle"],
             border_width=0,
-            corner_radius=12,
+            corner_radius=10,
         )
         self.list.grid(row=0, column=0, sticky="ew")
         self.list.grid_columnconfigure(0, weight=1)
@@ -190,10 +190,10 @@ class SettingRow(ctk.CTkFrame):
         ctk.CTkLabel(
             self,
             text=title,
-            font=(FONT, 13),
+            font=(FONT, 13, "bold"),
             text_color=COLORS["text"],
             anchor="w",
-        ).grid(row=0, column=0, sticky="w", padx=(14, 12), pady=7)
+        ).grid(row=0, column=0, sticky="w", padx=(14, 12), pady=6)
 
         control = control_factory(self) if control_factory is not None else None
         if control is not None:
@@ -216,7 +216,7 @@ class StatusPill(ctk.CTkFrame):
         ctk.CTkLabel(
             self,
             textvariable=text_var,
-            font=(FONT, 12),
+            font=(FONT, 12, "bold"),
             text_color=COLORS["muted"],
         ).grid(row=0, column=1)
 
@@ -245,7 +245,7 @@ class SubtleButton(ctk.CTkButton):
             fg_color = "#FFFFFF"
             hover_color = COLORS["row_hover"]
             border_width = 1
-            text_color = COLORS["muted"]
+            text_color = COLORS["text"]
 
         super().__init__(
             master,
@@ -258,6 +258,6 @@ class SubtleButton(ctk.CTkButton):
             border_width=border_width,
             border_color=COLORS["button_border_subtle"],
             text_color=text_color,
-            font=(FONT, 12),
+            font=(FONT, 12, "bold"),
             corner_radius=8,
         )
