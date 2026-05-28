@@ -18,6 +18,7 @@ def test_gui_uses_light_stepper_layout_from_reference() -> None:
     assert "class StepCard" in source
     assert "class StatusRow" in source
     assert "class IconCanvas" in source
+    assert "class TimelineMarker" in source
     assert "选择提示音" in source
     assert "生成共享通知脚本" in source
     assert "安装 Hook 配置" in source
@@ -27,6 +28,15 @@ def test_gui_uses_light_stepper_layout_from_reference() -> None:
     assert "当前状态" in source
     assert "配置预览" in source
     assert "#F6FAFF" in source
+
+
+def test_timeline_marker_draws_connector_lines_between_step_numbers() -> None:
+    source = inspect.getsource(agent_notify_configurator.TimelineMarker)
+
+    assert "show_top" in source
+    assert "show_bottom" in source
+    assert "create_line" in source
+    assert "create_oval" in source
 
 
 def test_gui_exposes_vscode_foreground_suppression_switch() -> None:

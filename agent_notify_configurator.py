@@ -87,6 +87,34 @@ class IconCanvas(ctk.CTkFrame):
             self.canvas.create_oval(31, 5, 41, 15, fill=color, outline=color)
 
 
+class TimelineMarker(ctk.CTkFrame):
+    def __init__(self, master, number: str, show_top: bool, show_bottom: bool) -> None:
+        super().__init__(master, width=68, height=116, fg_color=COLORS["bg"], corner_radius=0)
+        self.grid_propagate(False)
+        self.canvas = Canvas(self, width=68, height=116, bg=COLORS["bg"], bd=0, highlightthickness=0)
+        self.canvas.place(relx=0.5, rely=0.5, anchor="center")
+        self._draw_marker(number, show_top=show_top, show_bottom=show_bottom)
+
+    def _draw_marker(self, number: str, show_top: bool, show_bottom: bool) -> None:
+        center_x = 34
+        center_y = 34
+        radius = 18
+        if show_top:
+            self.canvas.create_line(center_x, 0, center_x, center_y - radius, fill=COLORS["line"], width=1)
+        if show_bottom:
+            self.canvas.create_line(center_x, center_y + radius, center_x, 116, fill=COLORS["line"], width=1)
+        self.canvas.create_oval(
+            center_x - radius,
+            center_y - radius,
+            center_x + radius,
+            center_y + radius,
+            fill=COLORS["blue"],
+            outline=COLORS["blue"],
+            width=0,
+        )
+        self.canvas.create_text(center_x, center_y, text=number, fill="#FFFFFF", font=(FONT, 15, "bold"))
+
+
 class StepCard(ctk.CTkFrame):
     def __init__(
         self,
@@ -274,9 +302,6 @@ class AgentNotifyApp(ctk.CTk):
         self._build_side_panel(main)
 
     def _build_timeline_steps(self) -> None:
-        line = ctk.CTkFrame(self.steps_scroll, fg_color=COLORS["line"], width=1)
-        line.grid(row=0, column=0, rowspan=6, sticky="ns", padx=(22, 20), pady=(38, 60))
-
         steps = [
             (
                 "1",
@@ -347,7 +372,12 @@ class AgentNotifyApp(ctk.CTk):
 
         for index, step in enumerate(steps):
             number, title, description, icon, icon_color, icon_bg, status, button, color, text_color, command = step
-            self._timeline_number(index, number)
+            TimelineMarker(
+                self.steps_scroll,
+                number,
+                show_top=index > 0,
+                show_bottom=True,
+            ).grid(row=index, column=0, padx=(0, 18), pady=(0, 16), sticky="n")
             StepCard(
                 self.steps_scroll,
                 title=title,
@@ -363,7 +393,12 @@ class AgentNotifyApp(ctk.CTk):
                 command=command,
             ).grid(row=index, column=1, sticky="ew", pady=(0, 16))
 
-        self._timeline_number(5, "6")
+        TimelineMarker(
+            self.steps_scroll,
+            "6",
+            show_top=True,
+            show_bottom=False,
+        ).grid(row=5, column=0, padx=(0, 18), pady=(0, 0), sticky="n")
         StepCard(
             self.steps_scroll,
             title="VS Code 前台静默（可选）",
@@ -376,19 +411,6 @@ class AgentNotifyApp(ctk.CTk):
             switch_var=self.suppress_when_vscode_focused_var,
             switch_command=self.save_suppression_preference,
         ).grid(row=5, column=1, sticky="ew", pady=(0, 0))
-
-    def _timeline_number(self, row: int, number: str) -> None:
-        badge = ctk.CTkLabel(
-            self.steps_scroll,
-            text=number,
-            width=34,
-            height=34,
-            fg_color=COLORS["blue"],
-            text_color="#FFFFFF",
-            font=(FONT, 15, "bold"),
-            corner_radius=17,
-        )
-        badge.grid(row=row, column=0, padx=(5, 20), pady=(28, 0), sticky="n")
 
     def _build_side_panel(self, master) -> None:
         side = ctk.CTkFrame(master, fg_color=COLORS["bg"], width=310)
