@@ -25,7 +25,7 @@ dist\AgentNotifyConfigurator.exe
 
 1. 点击 `Browse` 选择一个 `.wav` 或 `.mp3` 提示音。
 2. 点击 `Generate script` 生成共享通知脚本。
-3. 点击 `Install hooks` 写入 Codex 和 Claude Code 的用户级 Hook 配置。
+3. 点击 `Install hooks` 写入已安装工具的用户级 Hook 配置；如果只安装了 Codex 或只安装了 Claude Code，则只配置对应工具。
 4. 点击 `Test notice` 测试声音和右下角通知。
 5. 需要撤销时点击 `Uninstall`。
 
@@ -48,7 +48,7 @@ hooks.json.bak.YYYYMMDD-HHMMSS
 settings.json.bak.YYYYMMDD-HHMMSS
 ```
 
-重要规则：安装/写入配置前会先生成备份文件；取消配置不生成新备份，只移除本工具写入的 Hook 并删除托管目录。
+重要规则：安装/写入配置前会先生成备份文件；只会写入已存在的 Codex/Claude 配置目录；取消配置不生成新备份，只移除本工具写入的 Hook 并删除托管目录。
 
 ## 安全边界
 

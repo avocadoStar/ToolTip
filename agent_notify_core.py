@@ -203,19 +203,26 @@ def install_hooks(
     paths: AgentNotifyPaths,
     suppress_when_vscode_focused: bool = True,
 ) -> None:
+    codex_installed = paths.codex_hooks_path.parent.exists()
+    claude_installed = paths.claude_settings_path.parent.exists()
+    if not codex_installed and not claude_installed:
+        raise RuntimeError("Codex or Claude configuration directory was not found.")
+
     ensure_shared_script(audio_path, paths, suppress_when_vscode_focused=suppress_when_vscode_focused)
 
-    codex = read_json(paths.codex_hooks_path)
-    backup_json(paths.codex_hooks_path)
-    set_managed_hook(codex, "Codex", "Stop", False, paths)
-    set_managed_hook(codex, "Codex", "PermissionRequest", False, paths)
-    write_json(paths.codex_hooks_path, codex)
+    if codex_installed:
+        codex = read_json(paths.codex_hooks_path)
+        backup_json(paths.codex_hooks_path)
+        set_managed_hook(codex, "Codex", "Stop", False, paths)
+        set_managed_hook(codex, "Codex", "PermissionRequest", False, paths)
+        write_json(paths.codex_hooks_path, codex)
 
-    claude = read_json(paths.claude_settings_path)
-    backup_json(paths.claude_settings_path)
-    set_managed_hook(claude, "Claude", "Stop", True, paths)
-    set_managed_hook(claude, "Claude", "Notification", True, paths)
-    write_json(paths.claude_settings_path, claude)
+    if claude_installed:
+        claude = read_json(paths.claude_settings_path)
+        backup_json(paths.claude_settings_path)
+        set_managed_hook(claude, "Claude", "Stop", True, paths)
+        set_managed_hook(claude, "Claude", "Notification", True, paths)
+        write_json(paths.claude_settings_path, claude)
 
 
 def uninstall_hooks(paths: AgentNotifyPaths) -> None:

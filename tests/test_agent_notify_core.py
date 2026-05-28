@@ -23,6 +23,7 @@ def test_install_preserves_existing_claude_settings_and_adds_managed_hooks(tmp_p
     paths = make_paths(tmp_path)
     audio = tmp_path / "source.wav"
     audio.write_bytes(b"RIFF....WAVEfmt ")
+    paths.codex_hooks_path.parent.mkdir(parents=True)
     paths.claude_settings_path.parent.mkdir(parents=True)
     paths.claude_settings_path.write_text(
         json.dumps(
@@ -54,6 +55,8 @@ def test_reinstall_does_not_duplicate_managed_hooks(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     audio = tmp_path / "source.wav"
     audio.write_bytes(b"RIFF....WAVEfmt ")
+    paths.codex_hooks_path.parent.mkdir(parents=True)
+    paths.claude_settings_path.parent.mkdir(parents=True)
 
     install_hooks(audio, paths)
     install_hooks(audio, paths)
@@ -122,11 +125,53 @@ def test_install_hooks_persists_vscode_foreground_suppression_choice(tmp_path: P
     paths = make_paths(tmp_path)
     audio = tmp_path / "source.wav"
     audio.write_bytes(b"RIFF....WAVEfmt ")
+    paths.codex_hooks_path.parent.mkdir(parents=True)
 
     install_hooks(audio, paths, suppress_when_vscode_focused=False)
 
     config = json.loads(paths.config_path.read_text(encoding="utf-8"))
     assert config["suppressWhenVSCodeFocused"] is False
+
+
+def test_install_hooks_configures_only_codex_when_only_codex_is_installed(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    audio = tmp_path / "source.wav"
+    audio.write_bytes(b"RIFF....WAVEfmt ")
+    paths.codex_hooks_path.parent.mkdir(parents=True)
+
+    install_hooks(audio, paths)
+
+    assert paths.codex_hooks_path.exists()
+    assert not paths.claude_settings_path.exists()
+    assert is_event_configured(paths.codex_hooks_path, "Stop", paths)
+    assert is_event_configured(paths.codex_hooks_path, "PermissionRequest", paths)
+
+
+def test_install_hooks_configures_only_claude_when_only_claude_is_installed(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    audio = tmp_path / "source.wav"
+    audio.write_bytes(b"RIFF....WAVEfmt ")
+    paths.claude_settings_path.parent.mkdir(parents=True)
+
+    install_hooks(audio, paths)
+
+    assert not paths.codex_hooks_path.exists()
+    assert paths.claude_settings_path.exists()
+    assert is_event_configured(paths.claude_settings_path, "Stop", paths)
+    assert is_event_configured(paths.claude_settings_path, "Notification", paths)
+
+
+def test_install_hooks_fails_without_installed_agent(tmp_path: Path) -> None:
+    paths = make_paths(tmp_path)
+    audio = tmp_path / "source.wav"
+    audio.write_bytes(b"RIFF....WAVEfmt ")
+
+    with pytest.raises(RuntimeError, match="Codex or Claude"):
+        install_hooks(audio, paths)
+
+    assert not paths.agent_notify_dir.exists()
+    assert not paths.codex_hooks_path.exists()
+    assert not paths.claude_settings_path.exists()
 
 
 def test_load_suppress_when_vscode_focused_defaults_to_enabled(tmp_path: Path) -> None:
